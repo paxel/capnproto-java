@@ -12,7 +12,7 @@ Improvements that have been introduced here:
 The generated code now uses lambdas and streams.
 
 ## toString()
-The generated source now has toString() so you can log what you receive or send
+The generated source code now pimplements toString() so you can log what you receive or send.
 ```java
       @Override
       public String toString() {
@@ -24,7 +24,7 @@ The generated source now has toString() so you can log what you receive or send
 ```
 
 ## doMe(consumer)
-All access nethods that required isX() and/or hasX() can now be accessed with doX(Consumer x). 
+All access methods that require isX() and/or hasX() to be called before getX() can now be accessed with doX(Consumer x). 
 The consumer will only receive the X in case it is and/or has X.
 
 ```java
@@ -80,11 +80,13 @@ NOTE: I will update this part with more info about requirements soonish
 
 # FUTURE
 
+* allow chainbuilding (setX(return this;))
 * Release process via maven.
 * more tests.
 * cleanup the runtime code.
 * cleanup genearator code.
 * create in between pojo objects for projects that want to detach from the binary data.
+* remove the zero out of previous data and throw an exception instead.
 * force push upstream ;) [Say Hi do David.](https://github.com/dwrensha), the maintainer of the [original capnproto-java](https://dwrensha.github.io/capnproto-java/index.html)
 
 
