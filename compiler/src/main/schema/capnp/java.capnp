@@ -27,10 +27,10 @@ annotation package @0x9ee4c8f803b3b596 (file) : Text;
 annotation outerClassname @0x9b066bb4881f7cd3 (file) : Text;
 # Name of the outer class that will wrap the generated code.
 
-annotation readerInterface  (struct) : Text;
+annotation readerInterface @0xb0f814868ba94492 (struct) : Text;
 # map an external interface to a struct.
 # The given text xxx is added as 'implements xxx' to the reader class of this struct.
 
-annotation builderInterface  (struct) : Text;
+annotation builderInterface @0xe5f065f47ec0a238 (struct) : Text;
 # map an external interface to a struct.
 # The given text xxx is added as 'implements xxx' to the builder class of this struct.
