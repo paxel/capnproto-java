@@ -63,8 +63,8 @@ namespace {
 
 static constexpr uint64_t OUTER_CLASSNAME_ANNOTATION_ID = 0x9b066bb4881f7cd3ull;
 static constexpr uint64_t PACKAGE_ANNOTATION_ID = 0x9ee4c8f803b3b596ull;
-static constexpr uint64_t READER_INTERFACE_ANNOTATION_ID = 0x9bdeadb48beefcd3;
-static constexpr uint64_t BUILDER_INTERFACE_ANNOTATION_ID = 0x9bcafe48babe1337;
+static constexpr uint64_t READER_INTERFACE_ANNOTATION_ID = 0xb0f814868ba94492;
+static constexpr uint64_t BUILDER_INTERFACE_ANNOTATION_ID = 0xe5f065f47ec0a238;
 
 static constexpr const char* FIELD_SIZE_NAMES[] = {
   "VOID", "BIT", "BYTE", "TWO_BYTES", "FOUR_BYTES", "EIGHT_BYTES", "POINTER", "INLINE_COMPOSITE"
