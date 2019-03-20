@@ -1183,6 +1183,7 @@ private:
       auto factoryArg = makeFactoryArg(field.getType());
       hasExists=true;
       return FieldText {
+// struct reader
         kj::strTree(
           kj::mv(unionDiscrim.readerIsDef),
           spaces(indent), "  public boolean has", titleCase, "() {\n",
@@ -1200,7 +1201,8 @@ private:
          createToString(indent,titleCase,hasGet,hasExists||isExists),
 
         kj::strTree(
-          kj::mv(unionDiscrim.builderIsDef),
+// struct builder
+        kj::mv(unionDiscrim.builderIsDef),
           // this 'has' was added by paxel, because it seamed strange that the reader can check, but the builder can't
           spaces(indent), "  public boolean has", titleCase, "() {\n",
           spaces(indent), "    return !_pointerFieldIsNull(", offset, ");\n",
@@ -1230,9 +1232,10 @@ private:
              spaces(indent), "  }\n"
              ) :
            kj::strTree(
-             spaces(indent), "  public final void set", titleCase, "(", readerType, " value) {\n",
+             spaces(indent), "  public final Builder set", titleCase, "(", readerType, " value) {\n",
              unionDiscrim.set,
              spaces(indent), "    _setPointerField(", factoryArg, ",", offset, ", value);\n",
+             spaces(indent), "    return this; // chain building struct\n",
              spaces(indent), "  }\n")),
 
           spaces(indent), "  public final ", builderType, " init", titleCase, "() {\n",
