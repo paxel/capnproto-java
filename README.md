@@ -65,6 +65,26 @@ turns into
 ```
 
 
+## chain building
+The generated builder code now allows to chain build. This can make more compact, but also unreadable code. 
+Handle with care!
+
+```java
+        org.capnproto.MessageBuilder message = new org.capnproto.MessageBuilder();
+        AddressBook.Builder addressbook = message.initRoot(AddressBook.factory);
+        StructList.Builder<Person.Builder> people = addressbook.initPeople(2);
+
+        final Person.Builder alice = people.get(0).setId(123).setName("Alice").setEmail("alice@example.com");
+        alice.initPhones(1).get(0).setNumber("555-1212").setType(Person.PhoneNumber.Type.MOBILE);
+        alice.getEmployment().setSchool("MIT");
+
+        final Person.Builder bob = people.get(1).setId(456).setName("Bob").setEmail("bob@example.com");
+        bob.initPhones(2).get(0).setNumber("555-4567").setType(Person.PhoneNumber.Type.HOME);
+        bob.getPhones().get(1).setNumber("555-7654").setType(Person.PhoneNumber.Type.WORK);
+        bob.getEmployment().setUnemployed(org.capnproto.Void.VOID);
+
+```
+
 ## Support for external memory management
 The MessageBuilder and MessageReader have been opened to support custom Arena and SegmentReader and SegmentBuilder implementations.
 
@@ -248,7 +268,6 @@ NOTE: I will update this part with more info about requirements soonish
 
 # FUTURE
 
-* allow chainbuilding (setX(return this;))
 * Release process via maven.
 * more tests.
 * cleanup the runtime code.

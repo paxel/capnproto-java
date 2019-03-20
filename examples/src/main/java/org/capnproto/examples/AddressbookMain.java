@@ -35,25 +35,13 @@ public class AddressbookMain {
         AddressBook.Builder addressbook = message.initRoot(AddressBook.factory);
         StructList.Builder<Person.Builder> people = addressbook.initPeople(2);
 
-        Person.Builder alice = people.get(0);
-        alice.setId(123);
-        alice.setName("Alice");
-        alice.setEmail("alice@example.com");
-
-        StructList.Builder<Person.PhoneNumber.Builder> alicePhones = alice.initPhones(1);
-        alicePhones.get(0).setNumber("555-1212");
-        alicePhones.get(0).setType(Person.PhoneNumber.Type.MOBILE);
+        final Person.Builder alice = people.get(0).setId(123).setName("Alice").setEmail("alice@example.com");
+        alice.initPhones(1).get(0).setNumber("555-1212").setType(Person.PhoneNumber.Type.MOBILE);
         alice.getEmployment().setSchool("MIT");
 
-        Person.Builder bob = people.get(1);
-        bob.setId(456);
-        bob.setName("Bob");
-        bob.setEmail("bob@example.com");
-        StructList.Builder<Person.PhoneNumber.Builder> bobPhones = bob.initPhones(2);
-        bobPhones.get(0).setNumber("555-4567");
-        bobPhones.get(0).setType(Person.PhoneNumber.Type.HOME);
-        bobPhones.get(1).setNumber("555-7654");
-        bobPhones.get(1).setType(Person.PhoneNumber.Type.WORK);
+        final Person.Builder bob = people.get(1).setId(456).setName("Bob").setEmail("bob@example.com");
+        bob.initPhones(2).get(0).setNumber("555-4567").setType(Person.PhoneNumber.Type.HOME);
+        bob.getPhones().get(1).setNumber("555-7654").setType(Person.PhoneNumber.Type.WORK);
         bob.getEmployment().setUnemployed(org.capnproto.Void.VOID);
 
         org.capnproto.SerializePacked.writeToUnbuffered(

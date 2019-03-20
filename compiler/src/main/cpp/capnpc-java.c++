@@ -1330,6 +1330,7 @@ private:
       bool hasDo =!isGeneric;
       hasGet=!isGeneric;
       return FieldText {
+// list reader
         kj::strTree(
             kj::mv(unionDiscrim.readerIsDef),
             spaces(indent), "  public final boolean has", titleCase, "() {\n",
@@ -1363,6 +1364,7 @@ private:
          createToString(indent,titleCase,hasGet,hasDo),
 
         kj::strTree(
+// list builder
             kj::mv(unionDiscrim.builderIsDef),
             spaces(indent), "  public final boolean has", titleCase, "() {\n",
             spaces(indent), "    return !_pointerFieldIsNull(", offset, ");\n",
@@ -1409,9 +1411,10 @@ private:
                spaces(indent), "  }\n"
                ) :
              kj::strTree(
-               spaces(indent), "  public final void set", titleCase, "(", readerType, " value) {\n",
+               spaces(indent), "  public final Builder set", titleCase, "(", readerType, " value) {\n",
                unionDiscrim.set,
                spaces(indent), "    _setPointerField(", listFactory, ", ", offset, ", value);\n",
+               spaces(indent), "    return this;// chain building list\n",
                spaces(indent), "  }\n"
                )
               ),
@@ -1433,8 +1436,7 @@ private:
                spaces(indent), "  }\n"
                ) :
              kj::strTree(
-               spaces(indent), "  public final ", builderType,
-               " init", titleCase, "(int size) {\n",
+               spaces(indent), "  public final ", builderType, " init", titleCase, "(int size) {\n",
                unionDiscrim.set,
                spaces(indent), "    return _initPointerField(", listFactory, ", ", offset, ", size);\n",
                spaces(indent), "  }\n")
