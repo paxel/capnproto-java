@@ -1258,7 +1258,8 @@ private:
 
          hasExists=true;
       return FieldText {
-        kj::strTree(
+// blob reader
+          kj::strTree(
           kj::mv(unionDiscrim.readerIsDef),
           spaces(indent), "  public boolean has", titleCase, "() {\n",
           unionDiscrim.has,
@@ -1276,6 +1277,7 @@ private:
          createToString(indent,titleCase,hasGet,hasExists||isExists),
 
         kj::strTree(
+// blob builder
           kj::mv(unionDiscrim.builderIsDef),
           spaces(indent), "  public final boolean has", titleCase, "() {\n",
           unionDiscrim.has,
@@ -1286,14 +1288,15 @@ private:
           offset, ", ", defaultParams, ");\n",
           spaces(indent), "  }\n",
           createDoIfRequired(indent,titleCase,builderType,isExists,hasExists),
-          spaces(indent), "  public final void set", titleCase, "(", readerType, " value) {\n",
+          spaces(indent), "  public final Builder set", titleCase, "(", readerType, " value) {\n",
           unionDiscrim.set,
           spaces(indent), "    _setPointerField(", factory, ", ", offset, ", value);\n",
+          spaces(indent), "    return this; // chain building reader blob\n",
           spaces(indent), "  }\n",
-          spaces(indent), "  public final void set", titleCase, "(", setterInputType, " value) {\n",
+          spaces(indent), "  public final Builder set", titleCase, "(", setterInputType, " value) {\n",
           unionDiscrim.set,
-          spaces(indent), "    _setPointerField(", factory, ", ", offset, ", new ",
-          readerType, "(value));\n",
+          spaces(indent), "    _setPointerField(", factory, ", ", offset, ", new ", readerType, "(value));\n",
+          spaces(indent), "    return this; // chain building blob\n",
           spaces(indent), "  }\n",
 
           spaces(indent), "  public final ", builderType, " init", titleCase, "(int size) {\n",
