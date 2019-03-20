@@ -901,6 +901,7 @@ private:
             field.getProto().getGroup().getTypeId()).asStruct());
         hasExists=false;
         return FieldText {
+//  group reader
             kj::strTree(
                kj::mv(unionDiscrim.readerIsDef),
             spaces(indent), "  public ", titleCase, ".Reader get", titleCase, "() {\n",
@@ -910,6 +911,7 @@ private:
             createDoIfRequired(indent,titleCase,kj::strTree(scope,titleCase,".Reader").flatten(),isExists,hasExists),
             "\n"),
          createToString(indent,titleCase,hasGet,hasExists||isExists),
+//  group builder
             kj::strTree(
                kj::mv(unionDiscrim.builderIsDef),
               spaces(indent), "  public final ", titleCase, ".Builder get", titleCase, "() {\n",
@@ -1068,6 +1070,7 @@ private:
 
       return FieldText {
         kj::strTree(
+// primitive / enum reader
             kj::mv(unionDiscrim.readerIsDef),
             spaces(indent), "  public final ", readerType, " get", titleCase, "() {\n",
             unionDiscrim.check,
@@ -1083,6 +1086,7 @@ private:
          createToString(indent,titleCase,hasGet,hasExists||isExists),
 
           kj::strTree(
+// primitive / enum builder
             kj::mv(unionDiscrim.builderIsDef),
             spaces(indent), "  public final ", builderType, " get", titleCase, "() {\n",
             unionDiscrim.check,
@@ -1095,7 +1099,7 @@ private:
             spaces(indent), "  }\n",
             createDoIfRequired(indent,titleCase,consumerType,isExists,hasExists),
 
-            spaces(indent), "  public final void set", titleCase, "(", readerType, " value) {\n",
+            spaces(indent), "  public final Builder set", titleCase, "(", readerType, " value) {\n",
             unionDiscrim.set,
             (typeBody.which() == schema::Type::ENUM ?
              kj::strTree(spaces(indent), "    _setShortField(", offset, ", (short)value.ordinal()", defaultMaskParam, ");\n") :
@@ -1103,6 +1107,7 @@ private:
               kj::strTree() :
               kj::strTree(spaces(indent), "    _set",
                           toTitleCase(builderType), "Field(", offset, ", value", defaultMaskParam, ");\n"))),
+            spaces(indent), "    return this;\n",
             spaces(indent), "  }\n",
             "\n"),
          createToString(indent,titleCase,hasGet,hasExists||isExists)
