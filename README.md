@@ -64,6 +64,174 @@ turns into
 
 ```
 
+
+## Support for external memory management
+The MessageBuilder and MessageReader have been opened to support custom Arena and SegmentReader and SegmentBuilder implementations.
+
+For full memory control building a capnproto object extend
+
+```java
+
+/**
+ * The Arena used for allocating new Segments.
+ */
+public interface AllocatingArena extends Arena {
+
+    /**
+     * Allocate a new Segment in case the previous Segment is not big enough for
+     * the requested data.
+     *
+     * @param amountPlusRef the number of words needed.
+     * @return The result of the allocation.
+     */
+    BuilderArena.AllocateResult allocate(int amountPlusRef);
+
+    /**
+     * Provides the {@link GenericSegmentBuilder} for the given segment ID.
+     *
+     * @param segmentId the segment ID
+     * @return the segment.
+     */
+    @Override
+    GenericSegmentBuilder tryGetSegment(int segmentId);
+
+    /**
+     * Retrieve the ByteBuffers for Serialization.
+     *
+     * @return the buffers.
+     */
+    ByteBuffer[] getSegmentsForOutput();
+
+    /**
+     * Access all currently existing segments.
+     *
+     * @return the segments.
+     */
+    List<? extends GenericSegmentBuilder> getSegments();
+}
+
+
+/**
+ * Representation of the SegmentBuilder. This Builder is responsible to manage
+ * one Segment for building a new Message.
+ */
+public interface GenericSegmentBuilder extends SegmentDataContainer {
+
+    static final int FAILED_ALLOCATION = -1;
+
+    /**
+     * Puts the long value into the buffer at word index.
+     *
+     * @param index The word index.
+     * @param value The value to add.
+     */
+    void put(int index, long value);
+
+    /**
+     * The current size of the Segment.
+     *
+     * @return size
+     */
+    int currentSize();
+
+    /**
+     * allocate more memory in this segment.
+     *
+     * @param words
+     * @return the start position of the allocated words. -1 means there was not
+     * enough space in the segment.
+     */
+    int allocate(int words);
+
+    /**
+     * Retrieve the AllocatingArena.
+     *
+     * @return the arena.
+     */
+    @Override
+    AllocatingArena getArena();
+
+    /**
+     * Checks if the Segment is writable.
+     *
+     * @return {@code true}
+     */
+    boolean isWritable();
+
+    /**
+     * Retrieve the ID of this segment.
+     *
+     * @return the ID
+     */
+    int getId();
+
+    /**
+     * Sets the ID of the Segment.
+     *
+     * @param id the new ID.
+     */
+    void setId(int id);
+
+    /**
+     * Prepares the underlying ByteBuffer to be written.
+     *
+     * @return
+     */
+    ByteBuffer getSegmentForOutput();
+
+}
+
+```
+
+For preallocated memory control in reading objects implement
+
+```java
+
+/**
+ * Represents an Arena with previously allocated Segments.
+ */
+public interface AllocatedArena extends Arena {
+
+    /**
+     * Provides the {@link GenericSegmentReader} for the given segment ID.
+     *
+     * @param segmentId the segment ID.
+     * @return the segment.
+     */
+    @Override
+    public GenericSegmentReader tryGetSegment(int segmentId);
+
+    /**
+     * Access all existing segments
+     *
+     * @return the segments.
+     */
+    List<? extends GenericSegmentReader> getSegments();
+
+}
+
+
+/**
+ * Representation of the SegmentBuilder. This Builder is responsible to manage
+ * one Segment of an existing message.
+ */
+public interface GenericSegmentReader extends SegmentDataContainer {
+
+    GenericSegmentReader EMPTY = new SegmentReader(ByteBuffer.allocate(8), null);
+
+    /**
+     * Retrieve the Arena containing all Segments.
+     *
+     * @return the arena.
+     */
+    @Override
+    public AllocatedArena getArena();
+
+}
+
+```
+
+
 ## mavenized
 checkout the project
 install a current maven version
@@ -74,7 +242,7 @@ mvn clean install
 
 to do the benchmarks call
 
-mvn -P benchmark -pl benchmark
+mvn install -P benchmark -pl benchmark
 
 NOTE: I will update this part with more info about requirements soonish
 
