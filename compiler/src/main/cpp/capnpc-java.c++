@@ -1107,7 +1107,7 @@ private:
               kj::strTree() :
               kj::strTree(spaces(indent), "    _set",
                           toTitleCase(builderType), "Field(", offset, ", value", defaultMaskParam, ");\n"))),
-            spaces(indent), "    return this;\n",
+            spaces(indent), "    return this;// chain building primitive /enum\n",
             spaces(indent), "  }\n",
             "\n"),
          createToString(indent,titleCase,hasGet,hasExists||isExists)
@@ -1123,6 +1123,7 @@ private:
          hasExists=true;
       return FieldText {
         kj::strTree(
+// any pointer reader
             kj::mv(unionDiscrim.readerIsDef),
             spaces(indent), "  public boolean has", titleCase, "() {\n",
             unionDiscrim.has,
@@ -1139,6 +1140,7 @@ private:
          createToString(indent,titleCase,hasGet,hasExists||isExists),
 
         kj::strTree(
+// any pointer builder
             kj::mv(unionDiscrim.builderIsDef),
             spaces(indent), "  public final boolean has", titleCase, "() {\n",
             spaces(indent), "    return !_pointerFieldIsNull(", offset, ");\n",
@@ -1161,11 +1163,12 @@ private:
             spaces(indent), "  }\n",
 
             (field.getType().getBrandParameter() == nullptr ? kj::strTree() :
-             kj::strTree(spaces(indent), "  public <", readerType, "> void set", titleCase,
+             kj::strTree(spaces(indent), "  public <", readerType, "> Builder set", titleCase,
                          "(org.capnproto.SetPointerBuilder<", builderType, ",", readerType, "> factory,",
                          readerType, " value) {\n",
                          unionDiscrim.set,
                          spaces(indent), "    _setPointerField(factory, ", offset, ", value);\n",
+                         spaces(indent), "    return this;// chain building any builder \n",
                          spaces(indent), "  }\n")),
             "\n"),
           createToString(indent,titleCase,hasGet,hasExists||isExists)
