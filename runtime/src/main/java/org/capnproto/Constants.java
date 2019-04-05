@@ -18,14 +18,15 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
 
 public final class Constants {
+
     public static final int BITS_PER_BYTE = 8;
     public static final int BITS_PER_POINTER = 64;
     public static final int BITS_PER_WORD = 64;
     public static final int BYTES_PER_WORD = 8;
     public static final int POINTER_SIZE_IN_WORDS = 1;
     public static final int WORDS_PER_POINTER = 1;
+    public static final int MAX_SEGMENTS = 512;
 }
