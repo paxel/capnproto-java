@@ -39,9 +39,9 @@ public interface GenericSegmentBuilder extends SegmentDataContainer {
     void put(int index, long value);
 
     /**
-     * The current size of the Segment.
+     * The current size in words of the Segment.
      *
-     * @return size
+     * @return size in words.
      */
     int currentSize();
 

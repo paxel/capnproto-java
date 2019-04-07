@@ -8,6 +8,18 @@ and capabilities, and capnproto-java is a pure Java implementation.
 
 Improvements that have been introduced here:
 
+## TAG 2.0.0-rc002
+
+### MessageReader and MessageBuilder now have a getSerializedSize() method that gives the exact size when will be written or was read.
+This replaces Serialize.computeSerializedSizeInWords().
+
+### MessageBuilder now has a write(ByteBuffer) method
+This replaces Serialize.write(bb)
+
+### AllocatedArenaBuilder builds an Arena from ByteBuffer or ReadableChannel
+This replaces Serialize.read(..)
+
+
 ## Dropped support for JDK 7
 The generated code now uses lambdas and streams.
 

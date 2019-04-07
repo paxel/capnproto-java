@@ -26,9 +26,18 @@ public class SegmentReader implements GenericSegmentReader {
 
     public final ByteBuffer buffer;
     private final AllocatedArena arena;
+    private final int size;
 
+    /**
+     * This constructor will rewind the bytebuffer to find out it's size.
+     *
+     * @param buffer the data of this segment.
+     * @param arena The parent Arena.
+     */
     public SegmentReader(ByteBuffer buffer, AllocatedArena arena) {
         this.buffer = buffer;
+        buffer.rewind();
+        size = buffer.remaining();
         this.arena = arena;
     }
 
@@ -40,6 +49,11 @@ public class SegmentReader implements GenericSegmentReader {
     @Override
     public AllocatedArena getArena() {
         return arena;
+    }
+
+    @Override
+    public int getSize() {
+        return size;
     }
 
     @Override

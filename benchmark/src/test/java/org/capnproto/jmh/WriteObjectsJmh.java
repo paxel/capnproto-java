@@ -7,7 +7,6 @@ import java.nio.channels.Channels;
 import java.util.concurrent.TimeUnit;
 import org.capnproto.ArrayOutputStream;
 import org.capnproto.MessageBuilder;
-import org.capnproto.Serialize;
 import org.capnproto.benchmark.CarSalesSchema;
 import org.capnproto.benchmark.DataSchema;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -115,32 +114,32 @@ public class WriteObjectsJmh {
         writeChannel(data.data, hole);
     }
 
-        // call is too fast for ms
+    // call is too fast for ms
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
     @Benchmark
     public void writeArrayOutputStreamCar(Blackhole hole, DataProvider data) throws IOException {
-        writeChannel(data.car, hole);
+        writeBuff(data.car, hole);
     }
 
     @Benchmark
     public void writeArrayOutputStreamParkingLotWith1000Cars(Blackhole hole, DataProvider data) throws IOException {
-        writeChannel(data.lot, hole);
+        writeBuff(data.lot, hole);
     }
 
     @Benchmark
     public void writeArrayOutputStream100kData(Blackhole hole, DataProvider data) throws IOException {
-        writeChannel(data.data, hole);
+        writeBuff(data.data, hole);
     }
 
     private void writeChannel(MessageBuilder builder, Blackhole hole) throws IOException {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        Serialize.write(Channels.newChannel(byteArrayOutputStream), builder);
+        builder.write(Channels.newChannel(byteArrayOutputStream));
         hole.consume(byteArrayOutputStream);
     }
 
     private void writeBuff(MessageBuilder builder, Blackhole hole) throws IOException {
         final ArrayOutputStream byteArrayOutputStream = new ArrayOutputStream(ByteBuffer.allocate(1000_000));
-        Serialize.write(byteArrayOutputStream, builder);
+        builder.write(byteArrayOutputStream);
         hole.consume(byteArrayOutputStream);
     }
 

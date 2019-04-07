@@ -10,7 +10,6 @@ import org.capnproto.AllocatedArenaBuilder;
 import org.capnproto.ArrayInputStream;
 import org.capnproto.MessageBuilder;
 import org.capnproto.ReaderOptions;
-import org.capnproto.Serialize;
 import org.capnproto.benchmark.CarSalesSchema;
 import org.capnproto.benchmark.DataSchema;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -49,20 +48,8 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class ReadObjectsJmh {
 
-    private void read(byte[] bb, Blackhole hole) throws IOException {
-        hole.consume(Serialize.read(ByteBuffer.wrap(bb), ReaderOptions.DEFAULT_READER_OPTIONS));
-    }
-
-    private void readChannel(byte[] data, Blackhole hole) throws IOException {
-        hole.consume(Serialize.read(Channels.newChannel(new ByteArrayInputStream(data))));
-    }
-
-    private void readArrayInputStream(byte[] data, Blackhole hole) throws IOException {
-        hole.consume(Serialize.read(new ArrayInputStream(ByteBuffer.wrap(data))));
-    }
-
     private void read(byte[] bb, Blackhole hole, AllocatedArenaBuilder builder) throws IOException {
-        hole.consume(builder.build(ByteBuffer.wrap(bb), ReaderOptions.DEFAULT_READER_OPTIONS));
+        hole.consume(builder.build(ByteBuffer.wrap(bb)));
     }
 
     private void readChannel(byte[] data, Blackhole hole, AllocatedArenaBuilder builder) throws IOException {
@@ -110,7 +97,7 @@ public class ReadObjectsJmh {
 
         private byte[] write(MessageBuilder builder) throws IOException {
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            Serialize.write(Channels.newChannel(byteArrayOutputStream), builder);
+            builder.write(Channels.newChannel(byteArrayOutputStream));
             return byteArrayOutputStream.toByteArray();
         }
 
@@ -134,51 +121,6 @@ public class ReadObjectsJmh {
             car.setSeats((byte) 10);
             car.setFuelLevel((float) 0.4);
         }
-    }
-
-    @Benchmark
-    public void readByteBufferCar(Blackhole hole, DataProvider data) throws IOException {
-        read(data.car, hole);
-    }
-
-    @Benchmark
-    public void readByteBufferParkingLotWith1000Cars(Blackhole hole, DataProvider data) throws IOException {
-        read(data.lot, hole);
-    }
-
-    @Benchmark
-    public void readByteBuffer100kData(Blackhole hole, DataProvider data) throws IOException {
-        read(data.data, hole);
-    }
-
-    @Benchmark
-    public void readChannelCar(Blackhole hole, DataProvider data) throws IOException {
-        readChannel(data.car, hole);
-    }
-
-    @Benchmark
-    public void readChannelParkingLotWith1000Cars(Blackhole hole, DataProvider data) throws IOException {
-        readChannel(data.lot, hole);
-    }
-
-    @Benchmark
-    public void readChannel100kData(Blackhole hole, DataProvider data) throws IOException {
-        readChannel(data.data, hole);
-    }
-
-    @Benchmark
-    public void readArrayInputStreamCar(Blackhole hole, DataProvider data) throws IOException {
-        readArrayInputStream(data.car, hole);
-    }
-
-    @Benchmark
-    public void readArrayInputStreamParkingLotWith1000Cars(Blackhole hole, DataProvider data) throws IOException {
-        readArrayInputStream(data.lot, hole);
-    }
-
-    @Benchmark
-    public void readArrayInputStream100kData(Blackhole hole, DataProvider data) throws IOException {
-        readArrayInputStream(data.data, hole);
     }
 
     @Benchmark

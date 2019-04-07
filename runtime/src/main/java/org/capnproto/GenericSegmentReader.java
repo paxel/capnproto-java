@@ -36,6 +36,13 @@ public interface GenericSegmentReader extends SegmentDataContainer {
      * @return the arena.
      */
     @Override
-    public AllocatedArena getArena();
+    AllocatedArena getArena();
+
+    /**
+     * Retrieve the size of the available data in this segment.
+     *
+     * @return the size in bytes.
+     */
+    int getSize();
 
 }

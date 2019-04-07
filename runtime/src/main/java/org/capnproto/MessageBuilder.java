@@ -18,8 +18,12 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.WritableByteChannel;
 
 public final class MessageBuilder {
 
@@ -27,6 +31,7 @@ public final class MessageBuilder {
 
     /**
      * Creates a MessageBuilder with an injected custom AllocatingArena.
+     *
      * @param arena The custom AllocatingArena.
      */
     public MessageBuilder(AllocatingArena arena) {
@@ -35,17 +40,17 @@ public final class MessageBuilder {
 
     public MessageBuilder() {
         this.arena = new BuilderArena(BuilderArena.SUGGESTED_FIRST_SEGMENT_WORDS,
-                                      BuilderArena.SUGGESTED_ALLOCATION_STRATEGY);
+                BuilderArena.SUGGESTED_ALLOCATION_STRATEGY);
     }
 
     public MessageBuilder(int firstSegmentWords) {
         this.arena = new BuilderArena(firstSegmentWords,
-                                      BuilderArena.SUGGESTED_ALLOCATION_STRATEGY);
+                BuilderArena.SUGGESTED_ALLOCATION_STRATEGY);
     }
 
     public MessageBuilder(int firstSegmentWords, BuilderArena.AllocationStrategy allocationStrategy) {
         this.arena = new BuilderArena(firstSegmentWords,
-                                      allocationStrategy);
+                allocationStrategy);
     }
 
     private AnyPointer.Builder getRootInternal() {
@@ -83,5 +88,58 @@ public final class MessageBuilder {
      */
     public AllocatingArena getArena() {
         return arena;
+    }
+
+    /**
+     * Retrieve the size of the message in Bytes when written with {@link MessageBuilder#write(java.nio.channels.WritableByteChannel)
+     * }. This size might change if the content of this Builder is updated.
+     *
+     * @return the size in bytes.
+     */
+    public long getSerializedSize() {
+
+        // From the capnproto documentation:
+        // "When transmitting over a stream, the following should be sent..."
+        long bytes = 0;
+        // "(4 bytes) The number of segments, minus one..."
+        bytes += 4;
+        // "(N * 4 bytes) The size of each segment, in words."
+        bytes += arena.getSegments().size() * 4;
+        // "(0 or 4 bytes) Padding up to the next word boundary."
+        if (bytes % Constants.BYTES_PER_WORD != 0) {
+            bytes += 4;
+        }
+        for (GenericSegmentBuilder segment : arena.getSegments()) {
+            // The content of each segment, in order.
+            bytes += segment.currentSize() * Constants.BYTES_PER_WORD;
+        }
+
+        return bytes;
+
+    }
+
+    public void write(WritableByteChannel outputChannel) throws IOException {
+        ByteBuffer[] segments = this.getArena().getSegmentsForOutput();
+        int tableSize = (segments.length + 2) & (~1);
+
+        ByteBuffer table = ByteBuffer.allocate(4 * tableSize);
+        table.order(ByteOrder.LITTLE_ENDIAN);
+
+        table.putInt(0, segments.length - 1);
+
+        for (int i = 0; i < segments.length; ++i) {
+            table.putInt(4 * (i + 1), segments[i].limit() / 8);
+        }
+
+        // Any padding is already zeroed.
+        while (table.hasRemaining()) {
+            outputChannel.write(table);
+        }
+
+        for (ByteBuffer buffer : segments) {
+            while (buffer.hasRemaining()) {
+                outputChannel.write(buffer);
+            }
+        }
     }
 }

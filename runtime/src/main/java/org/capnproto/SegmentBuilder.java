@@ -18,7 +18,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
 
 import java.nio.ByteBuffer;
@@ -38,7 +37,7 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
     }
 
     // the total number of words the buffer can hold
-    private final int capacity() {
+    private int capacity() {
         buffer.rewind();
         return buffer.remaining() / 8;
     }

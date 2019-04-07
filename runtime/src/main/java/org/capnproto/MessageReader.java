@@ -24,8 +24,10 @@ import java.nio.ByteBuffer;
 
 public final class MessageReader {
 
+    // must be accessible as long the scala tests access it
     final AllocatedArena arena;
-    final int nestingLimit;
+    private final int nestingLimit;
+    private final long serializedSize;
 
     /**
      * Construct a MessageReader with an injected custom {@link Arena}, that can
@@ -37,16 +39,53 @@ public final class MessageReader {
         this.arena = arena;
         // as the nesting limit is currently completely ignored, we use the default.
         this.nestingLimit = ReaderOptions.DEFAULT_NESTING_LIMIT;
+        this.serializedSize = calculateSize();
     }
 
     public MessageReader(ByteBuffer[] segmentSlices, ReaderOptions options) {
         this.nestingLimit = options.nestingLimit;
         this.arena = new ReaderArena(segmentSlices, options.traversalLimitInWords);
+        this.serializedSize = calculateSize();
+    }
+
+    public AllocatedArena getArena() {
+        return arena;
     }
 
     public <T> T getRoot(FromPointerReader<T> factory) {
         GenericSegmentReader segment = this.arena.tryGetSegment(0);
         AnyPointer.Reader any = new AnyPointer.Reader(segment, 0, this.nestingLimit);
         return any.getAs(factory);
+    }
+
+    /**
+     * Retrieve the Size in Bytes of the data that generated this Reader.
+     *
+     * @return The size in bytes.
+     */
+    public long getSerializedSize() {
+        return serializedSize;
+
+    }
+
+    private long calculateSize() {
+        // From the capnproto documentation:
+        // "When transmitting over a stream, the following should be sent..."
+        long bytes = 0;
+        // "(4 bytes) The number of segments, minus one..."
+        bytes += 4;
+        // "(N * 4 bytes) The size of each segment, in words."
+        bytes += arena.getSegments().size() * 4;
+        // "(0 or 4 bytes) Padding up to the next word boundary."
+        if (bytes % Constants.BYTES_PER_WORD != 0) {
+            bytes += 4;
+        }
+
+        // The content of each segment, in order.
+        for (GenericSegmentReader segment : arena.getSegments()) {
+            bytes += segment.getSize();
+        }
+
+        return bytes;
     }
 }

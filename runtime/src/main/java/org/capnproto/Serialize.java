@@ -18,7 +18,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
 
 import java.io.IOException;
@@ -26,10 +25,25 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.ArrayList;
 
+/**
+ * This class is mainly kept for explaining how it was replaced. And for the
+ * time being run the scala unit tests.
+ *
+ * {@link MessageReader} and {@link MessageBuilder} have getSerializedSize() to
+ * find the binary size.
+ *
+ * To read a Message from a Channel or ByteBuffer use
+ * {@link AllocatedArenaBuilder} to create an Arena and create a
+ * {@link MessageReader} with the Arena.
+ *
+ * To write a Message use {@link MessageBuilder#write}
+ *
+ */
+@Deprecated
 public final class Serialize {
 
+    @Deprecated
     static ByteBuffer makeByteBuffer(int bytes) {
         ByteBuffer result = ByteBuffer.allocate(bytes);
         result.order(ByteOrder.LITTLE_ENDIAN);
@@ -37,8 +51,9 @@ public final class Serialize {
         return result;
     }
 
+    @Deprecated
     public static void fillBuffer(ByteBuffer buffer, ReadableByteChannel bc) throws IOException {
-        while(buffer.hasRemaining()) {
+        while (buffer.hasRemaining()) {
             int r = bc.read(buffer);
             if (r < 0) {
                 throw new IOException("premature EOF");
@@ -47,157 +62,78 @@ public final class Serialize {
         }
     }
 
+    @Deprecated
     public static MessageReader read(ReadableByteChannel bc) throws IOException {
         return read(bc, ReaderOptions.DEFAULT_READER_OPTIONS);
     }
 
+    /**
+     * Reads a capnp message into a MessageReader object.
+     *
+     * @param bc the input data.
+     * @param options the options.
+     * @return a messageReader or null if EOF.
+     * @throws java.io.IOException if thrown by the input data or the data is
+     * incomplete.
+     * @deprecated Use {@link AllocatedArenaBuilder#build(java.nio.channels.ReadableByteChannel) instead.
+     */
+    @Deprecated
     public static MessageReader read(ReadableByteChannel bc, ReaderOptions options) throws IOException {
-        ByteBuffer firstWord = makeByteBuffer(Constants.BYTES_PER_WORD);
-        fillBuffer(firstWord, bc);
-
-        int segmentCount = 1 + firstWord.getInt(0);
-
-        int segment0Size = 0;
-        if (segmentCount > 0) {
-            segment0Size = firstWord.getInt(4);
+        final AllocatedArena arena = new AllocatedArenaBuilder().build(bc);
+        if (arena == null) {
+            return null;
         }
-
-        int totalWords = segment0Size;
-
-        if (segmentCount > 512) {
-            throw new IOException("too many segments");
-        }
-
-        // in words
-        ArrayList<Integer> moreSizes = new ArrayList<>();
-
-        if (segmentCount > 1) {
-            ByteBuffer moreSizesRaw = makeByteBuffer(4 * (segmentCount & ~1));
-            fillBuffer(moreSizesRaw, bc);
-            for (int ii = 0; ii < segmentCount - 1; ++ii) {
-                int size = moreSizesRaw.getInt(ii * 4);
-                moreSizes.add(size);
-                totalWords += size;
-            }
-        }
-
-        if (totalWords > options.traversalLimitInWords) {
-            throw new DecodeException("Message size exceeds traversal limit.");
-        }
-
-        ByteBuffer allSegments = makeByteBuffer(totalWords * Constants.BYTES_PER_WORD);
-        fillBuffer(allSegments, bc);
-
-        ByteBuffer[] segmentSlices = new ByteBuffer[segmentCount];
-
-        allSegments.rewind();
-        segmentSlices[0] = allSegments.slice();
-        segmentSlices[0].limit(segment0Size * Constants.BYTES_PER_WORD);
-        segmentSlices[0].order(ByteOrder.LITTLE_ENDIAN);
-
-        int offset = segment0Size;
-        for (int ii = 1; ii < segmentCount; ++ii) {
-            allSegments.position(offset * Constants.BYTES_PER_WORD);
-            segmentSlices[ii] = allSegments.slice();
-            segmentSlices[ii].limit(moreSizes.get(ii - 1) * Constants.BYTES_PER_WORD);
-            segmentSlices[ii].order(ByteOrder.LITTLE_ENDIAN);
-            offset += moreSizes.get(ii - 1);
-        }
-
-        return new MessageReader(segmentSlices, options);
+        return new MessageReader(arena);
     }
 
+    /**
+     *
+     * @param bb
+     * @return
+     * @throws IOException
+     * @deprecated Use {@link AllocatedArenaBuilder#build(bb) instead.
+     */
+    @Deprecated
     public static MessageReader read(ByteBuffer bb) throws IOException {
         return read(bb, ReaderOptions.DEFAULT_READER_OPTIONS);
     }
 
-    /*
+    /**
      * Upon return, `bb.position()` will be at the end of the message.
+     *
+     * @param bb the input data.
+     * @param options the options are ignored.
+     * @return a messageReader or null if bb is empty.
+     * @throws java.io.IOException if thrown by the input data or the data is
+     * incomplete.
+     *
+     * @deprecated Use {@link AllocatedArenaBuilder#build(java.nio.ByteBuffer)  instead.
      */
+    @Deprecated
     public static MessageReader read(ByteBuffer bb, ReaderOptions options) throws IOException {
-        bb.order(ByteOrder.LITTLE_ENDIAN);
-
-        int segmentCount = 1 + bb.getInt();
-        if (segmentCount > 512) {
-            throw new IOException("too many segments");
+        final AllocatedArena arena = new AllocatedArenaBuilder().build(bb);
+        if (arena == null) {
+            return null;
         }
-
-        ByteBuffer[] segmentSlices = new ByteBuffer[segmentCount];
-
-        int segmentSizesBase = bb.position();
-        int segmentSizesSize = segmentCount * 4;
-
-        int align = Constants.BYTES_PER_WORD - 1;
-        int segmentBase = (segmentSizesBase + segmentSizesSize + align) & ~align;
-
-        int totalWords = 0;
-
-        for (int ii = 0; ii < segmentCount; ++ii) {
-            int segmentSize = bb.getInt(segmentSizesBase + ii * 4);
-
-            bb.position(segmentBase + totalWords * Constants.BYTES_PER_WORD);
-            segmentSlices[ii] = bb.slice();
-            segmentSlices[ii].limit(segmentSize * Constants.BYTES_PER_WORD);
-            segmentSlices[ii].order(ByteOrder.LITTLE_ENDIAN);
-
-            totalWords += segmentSize;
-        }
-        bb.position(segmentBase + totalWords * Constants.BYTES_PER_WORD);
-
-        if (totalWords > options.traversalLimitInWords) {
-            throw new DecodeException("Message size exceeds traversal limit.");
-        }
-
-        return new MessageReader(segmentSlices, options);
+        return new MessageReader(arena);
     }
 
+    /**
+     * Retrieve the size of the message in words.
+     *
+     * @deprecated Use message.getSerializedSize() / Constants.BYTES_PER_WORD
+     * instead.
+     */
+    @Deprecated
     public static long computeSerializedSizeInWords(MessageBuilder message) {
-        final ByteBuffer[] segments = message.getArena().getSegmentsForOutput();
-
-        // From the capnproto documentation:
-        // "When transmitting over a stream, the following should be sent..."
-        long bytes = 0;
-        // "(4 bytes) The number of segments, minus one..."
-        bytes += 4;
-        // "(N * 4 bytes) The size of each segment, in words."
-        bytes += segments.length * 4;
-        // "(0 or 4 bytes) Padding up to the next word boundary."
-        if (bytes % 8 != 0) {
-            bytes += 4;
-        }
-
-        // The content of each segment, in order.
-        for (int i = 0; i < segments.length; ++i) {
-            final ByteBuffer s = segments[i];
-            bytes += s.limit();
-        }
-
-        return bytes / Constants.BYTES_PER_WORD;
+        return message.getSerializedSize() / Constants.BYTES_PER_WORD;
     }
 
-    public static void write(WritableByteChannel outputChannel,
-                             MessageBuilder message) throws IOException {
-        ByteBuffer[] segments = message.getArena().getSegmentsForOutput();
-        int tableSize = (segments.length + 2) & (~1);
-
-        ByteBuffer table = ByteBuffer.allocate(4 * tableSize);
-        table.order(ByteOrder.LITTLE_ENDIAN);
-
-        table.putInt(0, segments.length - 1);
-
-        for (int i = 0; i < segments.length; ++i) {
-            table.putInt(4 * (i + 1), segments[i].limit() / 8);
-        }
-
-        // Any padding is already zeroed.
-        while (table.hasRemaining()) {
-            outputChannel.write(table);
-        }
-
-        for (ByteBuffer buffer : segments) {
-            while(buffer.hasRemaining()) {
-                outputChannel.write(buffer);
-            }
-        }
+    /**
+     * @deprecated use message.write(outputChannel); instead.
+     */
+    @Deprecated
+    public static void write(WritableByteChannel outputChannel, MessageBuilder message) throws IOException {
+        message.write(outputChannel);
     }
 }

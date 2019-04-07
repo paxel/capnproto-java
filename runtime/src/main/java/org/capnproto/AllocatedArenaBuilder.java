@@ -12,7 +12,7 @@ public class AllocatedArenaBuilder {
 
     private static final int INT_SIZE = 4;
 
-    static ByteBuffer makeByteBuffer(int bytes) {
+    private static ByteBuffer makeByteBuffer(int bytes) {
         ByteBuffer result = ByteBuffer.allocate(bytes);
         result.order(ByteOrder.LITTLE_ENDIAN);
         result.mark();
@@ -31,11 +31,20 @@ public class AllocatedArenaBuilder {
 
     private SegmentCountValidator segmentCountValidator = AllocatedArenaBuilder::segmentCountValidator;
     private SegmentReader reader = this::createInternalByteBuffers;
-    private Function<ByteBuffer[], AllocatedArena> arenaFactory = x -> new ReaderArena(x, 0);
+    private Function<ByteBuffer[], AllocatedArena> arenaFactory = SimpleReaderArena::new;
     private Function<Integer, ByteBuffer> byteBufferFactory = AllocatedArenaBuilder::makeByteBuffer;
 
     public SegmentCountValidator getSegmentCountValidator() {
         return segmentCountValidator;
+    }
+
+    public SegmentReader getReader() {
+        return reader;
+    }
+
+    public AllocatedArenaBuilder setReader(SegmentReader reader) {
+        this.reader = reader;
+        return this;
     }
 
     public AllocatedArenaBuilder setSegmentCountValidator(SegmentCountValidator segmentCountValidator) {
@@ -61,13 +70,30 @@ public class AllocatedArenaBuilder {
         return this;
     }
 
-    public AllocatedArena build(ReadableByteChannel bc) throws IOException {
-        return arenaFactory.apply(reader.read(bc));
+    /**
+     * Builds an Arena if the input contains valid data.
+     *
+     * @param input the input data.
+     * @return a new arena or null if input was at EOF
+     * @throws IOException if reading was impossible or input data invalid.
+     */
+    public AllocatedArena build(ReadableByteChannel input) throws IOException {
+        final ByteBuffer[] bb = reader.read(input);
+        if (bb == null) {
+            return null;
+        }
+        return arenaFactory.apply(bb);
     }
 
     private ByteBuffer[] createInternalByteBuffers(ReadableByteChannel bc) throws IOException {
         firstWord.rewind();
-        fillBuffer(firstWord, bc);
+        int read = fillBuffer(bc, firstWord);
+        if (read == 0) {
+            // EOF at the beginning
+            return null;
+        } else if (read < Constants.BYTES_PER_WORD) {
+            throw new IOException("Incomplete data: EOF after " + read);
+        }
         final int segmentCount = 1 + firstWord.getInt(0);
         final int segment0Size = firstWord.getInt(4);
 
@@ -76,8 +102,12 @@ public class AllocatedArenaBuilder {
         // in words
         List<Integer> moreSizes = new ArrayList<>();
         segmentSizeHeader.rewind();
-        segmentSizeHeader.limit(4 * (segmentCount & ~1));
-        fillBuffer(segmentSizeHeader, bc);
+        final int segmentSizeHeaderSize = 4 * (segmentCount & ~1);
+        segmentSizeHeader.limit(segmentSizeHeaderSize);
+        read = fillBuffer(bc, segmentSizeHeader);
+        if (read < segmentSizeHeaderSize) {
+            throw new IOException("Incomplete data: EOF after " + read + Constants.BYTES_PER_WORD);
+        }
         for (int segmentHeaderIndex = 0; segmentHeaderIndex < segmentCount - 1; ++segmentHeaderIndex) {
             int size = segmentSizeHeader.getInt(segmentHeaderIndex * 4);
             moreSizes.add(size);
@@ -85,7 +115,10 @@ public class AllocatedArenaBuilder {
         }
 
         ByteBuffer allSegments = byteBufferFactory.apply(totalWords * Constants.BYTES_PER_WORD);
-        fillBuffer(allSegments, bc);
+        read = fillBuffer(bc, allSegments);
+        if (read < segmentSizeHeaderSize) {
+            throw new IOException("Incomplete data: EOF after " + read + segmentSizeHeaderSize + Constants.BYTES_PER_WORD);
+        }
         ByteBuffer[] segmentSlices = new ByteBuffer[segmentCount];
         allSegments.rewind();
         segmentSlices[0] = allSegments.slice();
@@ -102,10 +135,20 @@ public class AllocatedArenaBuilder {
         return segmentSlices;
     }
 
-    /*
-     * Upon return, `bb.position()` will be at the end of the message.
+    /**
+     * Creates an AllocatedArena by slicing the given ByteBuffer. The ByteBuffer
+     * will be LittleEndian and positioned after the message on return. If the
+     * Message is truncated an IllegalArgumentException is thrown.
+     *
+     * @param bb The
+     * @return an AllocatedArena or null if bb was empty.
+     * @throws IOException If the SegmentCountValidator does.
+     * @throws IllegalArgumentException in case the message is trunctaed.
      */
-    public MessageReader build(ByteBuffer bb, ReaderOptions options) throws IOException {
+    public AllocatedArena build(ByteBuffer bb) throws IOException {
+        if (bb.remaining() == 0) {
+            return null;
+        }
         bb.order(ByteOrder.LITTLE_ENDIAN);
 
         int segmentCount = 1 + bb.getInt();
@@ -134,16 +177,29 @@ public class AllocatedArenaBuilder {
         }
         bb.position(segmentBase + totalWords * Constants.BYTES_PER_WORD);
 
-        return new MessageReader(segmentSlices, options);
+        return arenaFactory.apply(segmentSlices);
     }
 
-    private void fillBuffer(ByteBuffer buffer, ReadableByteChannel bc) throws IOException {
-        while (buffer.hasRemaining()) {
-            int r = bc.read(buffer);
+    /**
+     * Reads as many bytes as possible into the
+     *
+     * @param source the source
+     * @param target the target
+     * @return how many bytes were read.
+     * @throws IOException from
+     * {@link ReadableByteChannel#read(java.nio.ByteBuffer)}.
+     *
+     */
+    private int fillBuffer(ReadableByteChannel source, ByteBuffer target) throws IOException {
+        int read = 0;
+        while (target.hasRemaining()) {
+            int r = source.read(target);
             if (r < 0) {
-                throw new IOException("premature EOF");
+                break;
             }
+            read += r;
         }
+        return read;
     }
 
     @FunctionalInterface
