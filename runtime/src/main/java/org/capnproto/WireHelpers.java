@@ -836,9 +836,22 @@ final class WireHelpers {
                                        Data.Reader value) {
         Data.Builder builder = initDataPointer(refOffset, segment, value.size);
 
-        // TODO is there a way to do this with bulk methods?
-        for (int i = 0; i < builder.size; ++i) {
-            builder.buffer.put(builder.offset + i, value.buffer.get(value.offset + i));
+        if (builder.size > 10) {
+            // bigger data should be copied in bulk.
+            final ByteBuffer slice = value.buffer.slice();
+            slice.position(value.offset);
+            slice.limit(value.offset + builder.size);
+            final int position = builder.buffer.position();
+            builder.buffer.position(builder.offset);
+            builder.buffer.put(slice);
+            builder.buffer.position(position);
+
+        } else {
+            // smaller data should not create an additional bytebuffer and stuff
+            for (int i = 0; i < builder.size; ++i) {
+                builder.buffer.put(builder.offset + i, value.buffer.get(value.offset + i));
+            }
+
         }
         return builder;
     }
