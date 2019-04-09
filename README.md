@@ -8,6 +8,10 @@ and capabilities, and capnproto-java is a pure Java implementation.
 
 Improvements that have been introduced here:
 
+## TAG 2.0.0-rc003
+copying data from Reader to Builder is now bulked for bigger data.
+
+
 ## TAG 2.0.0-rc002
 
 ### MessageReader and MessageBuilder now have a getSerializedSize() method that gives the exact size when will be written or was read.
@@ -286,6 +290,5 @@ NOTE: I will update this part with more info about requirements soonish
 * cleanup genearator code.
 * create in between pojo objects for projects that want to detach from the binary data.
 * remove the zero out of previous data and throw an exception instead.
-* force push upstream ;) [Say Hi do David.](https://github.com/dwrensha), the maintainer of the [original capnproto-java](https://dwrensha.github.io/capnproto-java/index.html)
 
 
