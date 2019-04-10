@@ -10,6 +10,10 @@ Improvements that have been introduced here:
 
 ## TAG 2.0.0-rc003
 copying data from Reader to Builder is now bulked for bigger data.
+setWithCaveats for StructListBuilder (merged from upstream)
+```java
+        public final <U extends StructReader> void setWithCaveats(StructFactory<T, U> factory, int index, U value)
+```
 
 
 ## TAG 2.0.0-rc002
