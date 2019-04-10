@@ -110,7 +110,7 @@ public final class StructList {
 
         @Override
         public boolean isEmpty() {
-            return elementCount==0;
+            return elementCount == 0;
         }
 
         @Override
@@ -199,7 +199,7 @@ public final class StructList {
         }
     }
 
-    public static final class Builder<T> extends ListBuilder implements Iterable<T> {
+    public static final class Builder<T extends StructBuilder> extends ListBuilder implements Iterable<T> {
 
         public final StructBuilder.Factory<T> factory;
 
@@ -215,7 +215,22 @@ public final class StructList {
             return _getStructElement(factory, index);
         }
 
-        // TODO: rework generics so that we don't need this factory parameter
+        /**
+         * Sets the list element, with the following limitation based on the
+         * fact that structs in a struct list are allocated inline: if the
+         * source struct is larger than the target struct (as can happen if it
+         * was created with a newer version of the schema), then it will be
+         * truncated, losing fields.
+         *
+         * TODO: rework generics, so that we don't need this factory parameter
+         */
+        public final <U extends StructReader> void setWithCaveats(StructFactory<T, U> factory,
+                int index,
+                U value) {
+            this._getStructElement(this.factory, index)._copyContentFrom(value);
+        }
+
+        //TODO: rework generics, so that we don't need this factory parameter
         public final <U extends StructReader> Reader<U> asReader(StructFactory<T, U> factory) {
             return new Reader(factory,
                     this.segment, this.ptr, this.elementCount, this.step,
