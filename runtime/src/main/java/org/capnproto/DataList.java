@@ -96,12 +96,12 @@ public final class DataList {
 
         @Override
         public boolean add(Data.Reader e) {
-            throw new UnsupportedOperationException("This collection is immutable");
+            throw new UnsupportedOperationException("Unsupported");
         }
 
         @Override
         public boolean remove(Object o) {
-            throw new UnsupportedOperationException("This collection is immutable");
+            throw new UnsupportedOperationException("Unsupported");
         }
 
         @Override
@@ -111,22 +111,22 @@ public final class DataList {
 
         @Override
         public boolean addAll(Collection<? extends Data.Reader> c) {
-            throw new UnsupportedOperationException("This collection is immutable");
+            throw new UnsupportedOperationException("Unsupported");
         }
 
         @Override
         public boolean removeAll(Collection<?> c) {
-            throw new UnsupportedOperationException("This collection is immutable");
+            throw new UnsupportedOperationException("Unsupported");
         }
 
         @Override
         public boolean retainAll(Collection<?> c) {
-            throw new UnsupportedOperationException("This collection is immutable");
+            throw new UnsupportedOperationException("Unsupported");
         }
 
         @Override
         public void clear() {
-            throw new UnsupportedOperationException("This collection is immutable");
+            throw new UnsupportedOperationException("Unsupported");
         }
 
 
@@ -167,7 +167,7 @@ public final class DataList {
 
     }
 
-    public static final class Builder extends ListBuilder implements Iterable<Data.Builder> {
+    public static final class Builder extends ListBuilder implements Collection<Data.Builder> {
 
         public Builder(GenericSegmentBuilder segment, int ptr,
                 int elementCount, int step,
@@ -217,6 +217,67 @@ public final class DataList {
         @Override
         public java.util.Iterator<Data.Builder> iterator() {
             return new Iterator(this);
+        }
+        @Override
+        public boolean isEmpty() {
+            return elementCount==0;
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            return stream().anyMatch(o::equals);
+        }
+
+        @Override
+        public Object[] toArray() {
+            return stream().collect(Collectors.toList()).toArray();
+        }
+
+        @Override
+        public <T> T[] toArray(T[] a) {
+            return stream().collect(Collectors.toList()).toArray(a);
+        }
+
+        @Override
+        public boolean add(Data.Builder e) {
+            throw new UnsupportedOperationException("Unsupported");
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            throw new UnsupportedOperationException("Unsupported");
+        }
+
+        @Override
+        public boolean containsAll(Collection<?> c) {
+            return stream().collect(Collectors.toList()).containsAll(c);
+        }
+
+        @Override
+        public boolean addAll(Collection<? extends Data.Builder> c) {
+            throw new UnsupportedOperationException("Unsupported");
+        }
+
+        @Override
+        public boolean removeAll(Collection<?> c) {
+            throw new UnsupportedOperationException("Unsupported");
+        }
+
+        @Override
+        public boolean retainAll(Collection<?> c) {
+            throw new UnsupportedOperationException("Unsupported");
+        }
+
+        @Override
+        public void clear() {
+            throw new UnsupportedOperationException("Unsupported");
+        }
+
+
+
+        @Override
+        public String toString() {
+            return stream().map(String::valueOf).collect(Collectors.joining(","));
         }
 
     }

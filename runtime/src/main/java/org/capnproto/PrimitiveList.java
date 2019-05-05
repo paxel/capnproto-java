@@ -67,6 +67,11 @@ public class PrimitiveList {
                 super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
             }
 
+            @Override
+            public String toString() {
+                return stream().map(String::valueOf).collect(Collectors.joining(", "));
+            }
+
             public org.capnproto.Void get(int index) {
                 return org.capnproto.Void.VOID;
             }
@@ -93,12 +98,12 @@ public class PrimitiveList {
 
             @Override
             public boolean add(org.capnproto.Void e) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean remove(Object o) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
@@ -108,22 +113,22 @@ public class PrimitiveList {
 
             @Override
             public boolean addAll(Collection<? extends org.capnproto.Void> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean removeAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean retainAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public void clear() {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             public Stream<org.capnproto.Void> stream() {
@@ -164,7 +169,7 @@ public class PrimitiveList {
 
         }
 
-        public static final class Builder extends ListBuilder {
+        public static final class Builder extends ListBuilder implements Collection<org.capnproto.Void> {
 
             public Builder(GenericSegmentBuilder segment, int ptr,
                     int elementCount, int step,
@@ -176,6 +181,97 @@ public class PrimitiveList {
                 return new Reader(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return elementCount == 0;
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                return stream().anyMatch(o::equals);
+            }
+
+            @Override
+            public Object[] toArray() {
+                return stream().collect(Collectors.toList()).toArray();
+            }
+
+            @Override
+            public <T> T[] toArray(T[] a) {
+                return stream().collect(Collectors.toList()).toArray(a);
+            }
+
+            @Override
+            public boolean add(org.capnproto.Void e) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean remove(Object o) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean containsAll(Collection<?> c) {
+                return stream().collect(Collectors.toList()).containsAll(c);
+            }
+
+            @Override
+            public boolean addAll(Collection<? extends org.capnproto.Void> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean removeAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean retainAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public void clear() {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public Stream<org.capnproto.Void> stream() {
+                return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
+                        Spliterator.SIZED & Spliterator.IMMUTABLE), false);
+            }
+
+            public final class Iterator implements java.util.Iterator<org.capnproto.Void> {
+
+                public Void.Builder list;
+                public int idx = 0;
+
+                public Iterator(Void.Builder list) {
+                    this.list = list;
+                }
+
+                @Override
+                public org.capnproto.Void next() {
+                    return null;
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return idx < list.size();
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            }
+
+            @Override
+            public java.util.Iterator<org.capnproto.Void> iterator() {
+                return new Iterator(this);
             }
         }
     }
@@ -243,12 +339,12 @@ public class PrimitiveList {
 
             @Override
             public boolean add(java.lang.Boolean e) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean remove(Object o) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
@@ -258,28 +354,33 @@ public class PrimitiveList {
 
             @Override
             public boolean addAll(Collection<? extends java.lang.Boolean> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean removeAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean retainAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public void clear() {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             public Stream<java.lang.Boolean> stream() {
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE
                 ), false);
+            }
+
+            @Override
+            public String toString() {
+                return stream().map(String::valueOf).collect(Collectors.joining(", "));
             }
 
             public final class Iterator implements java.util.Iterator<java.lang.Boolean> {
@@ -312,14 +413,9 @@ public class PrimitiveList {
                 return new Iterator(this);
             }
 
-            @Override
-            public String toString() {
-                return stream().map(String::valueOf).collect(Collectors.joining(","));
-            }
-
         }
 
-        public static final class Builder extends ListBuilder {
+        public static final class Builder extends ListBuilder implements Collection<java.lang.Boolean> {
 
             public Builder(GenericSegmentBuilder segment, int ptr,
                     int elementCount, int step,
@@ -340,6 +436,103 @@ public class PrimitiveList {
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
             }
+
+            @Override
+            public boolean isEmpty() {
+                return elementCount == 0;
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                return stream().anyMatch(o::equals);
+            }
+
+            @Override
+            public Object[] toArray() {
+                return stream().collect(Collectors.toList()).toArray();
+            }
+
+            @Override
+            public <T> T[] toArray(T[] a) {
+                return stream().collect(Collectors.toList()).toArray(a);
+            }
+
+            @Override
+            public boolean add(java.lang.Boolean e) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean remove(Object o) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean containsAll(Collection<?> c) {
+                return stream().collect(Collectors.toList()).containsAll(c);
+            }
+
+            @Override
+            public boolean addAll(Collection<? extends java.lang.Boolean> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean removeAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean retainAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public void clear() {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            public Stream<java.lang.Boolean> stream() {
+                return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
+                        Spliterator.SIZED & Spliterator.IMMUTABLE
+                ), false);
+            }
+
+            @Override
+            public String toString() {
+                return stream().map(String::valueOf).collect(Collectors.joining(", "));
+            }
+
+            public final class Iterator implements java.util.Iterator<java.lang.Boolean> {
+
+                public Builder list;
+                public int idx = 0;
+
+                public Iterator(Builder list) {
+                    this.list = list;
+                }
+
+                @Override
+                public java.lang.Boolean next() {
+                    return get(idx++);
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return idx < list.size();
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            }
+
+            @Override
+            public java.util.Iterator<java.lang.Boolean> iterator() {
+                return new Iterator(this);
+            }
+
         }
     }
 
@@ -406,12 +599,12 @@ public class PrimitiveList {
 
             @Override
             public boolean add(java.lang.Byte e) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean remove(Object o) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
@@ -421,22 +614,22 @@ public class PrimitiveList {
 
             @Override
             public boolean addAll(Collection<? extends java.lang.Byte> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean removeAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean retainAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public void clear() {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             public Stream<java.lang.Byte> stream() {
@@ -482,7 +675,7 @@ public class PrimitiveList {
 
         }
 
-        public static final class Builder extends ListBuilder {
+        public static final class Builder extends ListBuilder implements Collection<java.lang.Byte> {
 
             public Builder(GenericSegmentBuilder segment, int ptr,
                     int elementCount, int step,
@@ -503,6 +696,103 @@ public class PrimitiveList {
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
             }
+
+            @Override
+            public boolean isEmpty() {
+                return elementCount == 0;
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                return stream().anyMatch(o::equals);
+            }
+
+            @Override
+            public Object[] toArray() {
+                return stream().collect(Collectors.toList()).toArray();
+            }
+
+            @Override
+            public <T> T[] toArray(T[] a) {
+                return stream().collect(Collectors.toList()).toArray(a);
+            }
+
+            @Override
+            public boolean add(java.lang.Byte e) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean remove(Object o) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean containsAll(Collection<?> c) {
+                return stream().collect(Collectors.toList()).containsAll(c);
+            }
+
+            @Override
+            public boolean addAll(Collection<? extends java.lang.Byte> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean removeAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean retainAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public void clear() {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            public Stream<java.lang.Byte> stream() {
+                return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
+                        Spliterator.SIZED & Spliterator.IMMUTABLE
+                ), false);
+            }
+
+            public final class Iterator implements java.util.Iterator<java.lang.Byte> {
+
+                public Builder list;
+                public int idx = 0;
+
+                public Iterator(Builder list) {
+                    this.list = list;
+                }
+
+                @Override
+                public java.lang.Byte next() {
+                    return get(idx++);
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return idx < list.size();
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            }
+
+            @Override
+            public java.util.Iterator<java.lang.Byte> iterator() {
+                return new Iterator(this);
+            }
+
+            @Override
+            public String toString() {
+                return stream().map(String::valueOf).collect(Collectors.joining(","));
+            }
+
         }
     }
 
@@ -570,12 +860,12 @@ public class PrimitiveList {
 
             @Override
             public boolean add(java.lang.Short e) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean remove(Object o) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
@@ -585,22 +875,22 @@ public class PrimitiveList {
 
             @Override
             public boolean addAll(Collection<? extends java.lang.Short> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean removeAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean retainAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public void clear() {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             public Stream<java.lang.Short> stream() {
@@ -646,7 +936,7 @@ public class PrimitiveList {
 
         }
 
-        public static final class Builder extends ListBuilder {
+        public static final class Builder extends ListBuilder implements Collection<java.lang.Short> {
 
             public Builder(GenericSegmentBuilder segment, int ptr,
                     int elementCount, int step,
@@ -667,6 +957,103 @@ public class PrimitiveList {
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
             }
+
+            @Override
+            public boolean isEmpty() {
+                return elementCount == 0;
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                return stream().anyMatch(o::equals);
+            }
+
+            @Override
+            public Object[] toArray() {
+                return stream().collect(Collectors.toList()).toArray();
+            }
+
+            @Override
+            public <T> T[] toArray(T[] a) {
+                return stream().collect(Collectors.toList()).toArray(a);
+            }
+
+            @Override
+            public boolean add(java.lang.Short e) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean remove(Object o) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean containsAll(Collection<?> c) {
+                return stream().collect(Collectors.toList()).containsAll(c);
+            }
+
+            @Override
+            public boolean addAll(Collection<? extends java.lang.Short> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean removeAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean retainAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public void clear() {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            public Stream<java.lang.Short> stream() {
+                return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
+                        Spliterator.SIZED & Spliterator.IMMUTABLE
+                ), false);
+            }
+
+            public final class Iterator implements java.util.Iterator<java.lang.Short> {
+
+                public Short.Builder list;
+                public int idx = 0;
+
+                public Iterator(Short.Builder list) {
+                    this.list = list;
+                }
+
+                @Override
+                public java.lang.Short next() {
+                    return get(idx++);
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return idx < list.size();
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            }
+
+            @Override
+            public java.util.Iterator<java.lang.Short> iterator() {
+                return new Iterator(this);
+            }
+
+            @Override
+            public String toString() {
+                return stream().map(String::valueOf).collect(Collectors.joining(","));
+            }
+
         }
     }
 
@@ -734,12 +1121,12 @@ public class PrimitiveList {
 
             @Override
             public boolean add(Integer e) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean remove(Object o) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
@@ -749,22 +1136,22 @@ public class PrimitiveList {
 
             @Override
             public boolean addAll(Collection<? extends Integer> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean removeAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean retainAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public void clear() {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             public Stream<Integer> stream() {
@@ -810,7 +1197,7 @@ public class PrimitiveList {
 
         }
 
-        public static final class Builder extends ListBuilder {
+        public static final class Builder extends ListBuilder implements Collection<Integer> {
 
             public Builder(GenericSegmentBuilder segment, int ptr,
                     int elementCount, int step,
@@ -831,6 +1218,104 @@ public class PrimitiveList {
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
             }
+
+            @Override
+            public boolean isEmpty() {
+                return elementCount == 0;
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                return stream().anyMatch(o::equals);
+            }
+
+            @Override
+            public Object[] toArray() {
+                return stream().collect(Collectors.toList()).toArray();
+            }
+
+            @Override
+            public <T> T[] toArray(T[] a) {
+                return stream().collect(Collectors.toList()).toArray(a);
+            }
+
+            @Override
+            public boolean add(Integer e) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean remove(Object o) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean containsAll(Collection<?> c) {
+                return stream().collect(Collectors.toList()).containsAll(c);
+            }
+
+            @Override
+            public boolean addAll(Collection<? extends Integer> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean removeAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean retainAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public void clear() {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public Stream<Integer> stream() {
+                return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
+                        Spliterator.SIZED & Spliterator.IMMUTABLE
+                ), false);
+            }
+
+            public final class Iterator implements java.util.Iterator<Integer> {
+
+                public Builder list;
+                public int idx = 0;
+
+                public Iterator(Builder list) {
+                    this.list = list;
+                }
+
+                @Override
+                public Integer next() {
+                    return get(idx++);
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return idx < list.size();
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            }
+
+            @Override
+            public java.util.Iterator<Integer> iterator() {
+                return new Iterator(this);
+            }
+
+            @Override
+            public String toString() {
+                return stream().map(String::valueOf).collect(Collectors.joining(","));
+            }
+
         }
     }
 
@@ -897,12 +1382,12 @@ public class PrimitiveList {
 
             @Override
             public boolean add(java.lang.Float e) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean remove(Object o) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
@@ -912,28 +1397,34 @@ public class PrimitiveList {
 
             @Override
             public boolean addAll(Collection<? extends java.lang.Float> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean removeAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean retainAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public void clear() {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
+            @Override
             public Stream<java.lang.Float> stream() {
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE
                 ), false);
+            }
+
+            @Override
+            public String toString() {
+                return stream().map(String::valueOf).collect(Collectors.joining(", "));
             }
 
             public final class Iterator implements java.util.Iterator<java.lang.Float> {
@@ -966,14 +1457,9 @@ public class PrimitiveList {
                 return new Iterator(this);
             }
 
-            @Override
-            public String toString() {
-                return stream().map(String::valueOf).collect(Collectors.joining(","));
-            }
-
         }
 
-        public static final class Builder extends ListBuilder {
+        public static final class Builder extends ListBuilder implements Collection<java.lang.Float> {
 
             public Builder(GenericSegmentBuilder segment, int ptr,
                     int elementCount, int step,
@@ -994,6 +1480,104 @@ public class PrimitiveList {
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
             }
+
+            @Override
+            public boolean isEmpty() {
+                return elementCount == 0;
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                return stream().anyMatch(o::equals);
+            }
+
+            @Override
+            public Object[] toArray() {
+                return stream().collect(Collectors.toList()).toArray();
+            }
+
+            @Override
+            public <T> T[] toArray(T[] a) {
+                return stream().collect(Collectors.toList()).toArray(a);
+            }
+
+            @Override
+            public boolean add(java.lang.Float e) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean remove(Object o) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean containsAll(Collection<?> c) {
+                return stream().collect(Collectors.toList()).containsAll(c);
+            }
+
+            @Override
+            public boolean addAll(Collection<? extends java.lang.Float> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean removeAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean retainAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public void clear() {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public Stream<java.lang.Float> stream() {
+                return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
+                        Spliterator.SIZED & Spliterator.IMMUTABLE
+                ), false);
+            }
+
+            @Override
+            public String toString() {
+                return stream().map(String::valueOf).collect(Collectors.joining(", "));
+            }
+
+            public final class Iterator implements java.util.Iterator<java.lang.Float> {
+
+                public Builder list;
+                public int idx = 0;
+
+                public Iterator(Builder list) {
+                    this.list = list;
+                }
+
+                @Override
+                public java.lang.Float next() {
+                    return get(idx++);
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return idx < list.size();
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            }
+
+            @Override
+            public java.util.Iterator<java.lang.Float> iterator() {
+                return new Iterator(this);
+            }
+
         }
     }
 
@@ -1060,12 +1644,12 @@ public class PrimitiveList {
 
             @Override
             public boolean add(java.lang.Long e) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean remove(Object o) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
@@ -1075,28 +1659,27 @@ public class PrimitiveList {
 
             @Override
             public boolean addAll(Collection<? extends java.lang.Long> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean removeAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean retainAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public void clear() {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             public Stream<java.lang.Long> stream() {
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
-                        Spliterator.SIZED & Spliterator.IMMUTABLE
-                ), false);
+                        Spliterator.SIZED & Spliterator.IMMUTABLE), false);
             }
 
             public final class Iterator implements java.util.Iterator<java.lang.Long> {
@@ -1136,7 +1719,7 @@ public class PrimitiveList {
 
         }
 
-        public static final class Builder extends ListBuilder {
+        public static final class Builder extends ListBuilder implements Collection<java.lang.Long> {
 
             public Builder(GenericSegmentBuilder segment, int ptr,
                     int elementCount, int step,
@@ -1156,6 +1739,102 @@ public class PrimitiveList {
                 return new Reader(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return elementCount == 0;
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                return stream().anyMatch(o::equals);
+            }
+
+            @Override
+            public Object[] toArray() {
+                return stream().collect(Collectors.toList()).toArray();
+            }
+
+            @Override
+            public <T> T[] toArray(T[] a) {
+                return stream().collect(Collectors.toList()).toArray(a);
+            }
+
+            @Override
+            public boolean add(java.lang.Long e) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean remove(Object o) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean containsAll(Collection<?> c) {
+                return stream().collect(Collectors.toList()).containsAll(c);
+            }
+
+            @Override
+            public boolean addAll(Collection<? extends java.lang.Long> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean removeAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean retainAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public void clear() {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public Stream<java.lang.Long> stream() {
+                return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
+                        Spliterator.SIZED & Spliterator.IMMUTABLE), false);
+            }
+
+            public final class Iterator implements java.util.Iterator<java.lang.Long> {
+
+                public Builder list;
+                public int idx = 0;
+
+                public Iterator(Builder list) {
+                    this.list = list;
+                }
+
+                @Override
+                public java.lang.Long next() {
+                    return get(idx++);
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return idx < list.size();
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            }
+
+            @Override
+            public java.util.Iterator<java.lang.Long> iterator() {
+                return new Iterator(this);
+            }
+
+            @Override
+            public String toString() {
+                return stream().map(String::valueOf).collect(Collectors.joining(","));
             }
         }
     }
@@ -1223,12 +1902,12 @@ public class PrimitiveList {
 
             @Override
             public boolean add(java.lang.Double e) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean remove(Object o) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
@@ -1238,28 +1917,34 @@ public class PrimitiveList {
 
             @Override
             public boolean addAll(Collection<? extends java.lang.Double> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean removeAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public boolean retainAll(Collection<?> c) {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
             @Override
             public void clear() {
-                throw new UnsupportedOperationException("This collection is immutable");
+                throw new UnsupportedOperationException("Unsupported");
             }
 
+            @Override
             public Stream<java.lang.Double> stream() {
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE
                 ), false);
+            }
+
+            @Override
+            public String toString() {
+                return stream().map(String::valueOf).collect(Collectors.joining(", "));
             }
 
             public final class Iterator implements java.util.Iterator<java.lang.Double> {
@@ -1292,14 +1977,9 @@ public class PrimitiveList {
                 return new Iterator(this);
             }
 
-            @Override
-            public String toString() {
-                return stream().map(String::valueOf).collect(Collectors.joining(","));
-            }
-
         }
 
-        public static final class Builder extends ListBuilder {
+        public static final class Builder extends ListBuilder implements Collection<java.lang.Double> {
 
             public Builder(GenericSegmentBuilder segment, int ptr,
                     int elementCount, int step,
@@ -1320,6 +2000,104 @@ public class PrimitiveList {
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
             }
+
+            @Override
+            public boolean isEmpty() {
+                return elementCount == 0;
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                return stream().anyMatch(o::equals);
+            }
+
+            @Override
+            public Object[] toArray() {
+                return stream().collect(Collectors.toList()).toArray();
+            }
+
+            @Override
+            public <T> T[] toArray(T[] a) {
+                return stream().collect(Collectors.toList()).toArray(a);
+            }
+
+            @Override
+            public boolean add(java.lang.Double e) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean remove(Object o) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean containsAll(Collection<?> c) {
+                return stream().collect(Collectors.toList()).containsAll(c);
+            }
+
+            @Override
+            public boolean addAll(Collection<? extends java.lang.Double> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean removeAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public boolean retainAll(Collection<?> c) {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public void clear() {
+                throw new UnsupportedOperationException("Unsupported");
+            }
+
+            @Override
+            public Stream<java.lang.Double> stream() {
+                return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
+                        Spliterator.SIZED & Spliterator.IMMUTABLE
+                ), false);
+            }
+
+            @Override
+            public String toString() {
+                return stream().map(String::valueOf).collect(Collectors.joining(", "));
+            }
+
+            public final class Iterator implements java.util.Iterator<java.lang.Double> {
+
+                public Builder list;
+                public int idx = 0;
+
+                public Iterator(Builder list) {
+                    this.list = list;
+                }
+
+                @Override
+                public java.lang.Double next() {
+                    return get(idx++);
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return idx < list.size();
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            }
+
+            @Override
+            public java.util.Iterator<java.lang.Double> iterator() {
+                return new Iterator(this);
+            }
+
         }
     }
 }

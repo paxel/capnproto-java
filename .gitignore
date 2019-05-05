@@ -5,3 +5,4 @@ generated/
 /dist/
 capnpc-java
 /nbproject/private/
+/runtime/nbproject/

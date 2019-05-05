@@ -130,12 +130,12 @@ public final class StructList {
 
         @Override
         public boolean add(T e) {
-            throw new UnsupportedOperationException("This collection is immutable");
+            throw new UnsupportedOperationException("Unsupported");
         }
 
         @Override
         public boolean remove(Object o) {
-            throw new UnsupportedOperationException("This collection is immutable");
+            throw new UnsupportedOperationException("Unsupported");
         }
 
         @Override
@@ -145,22 +145,22 @@ public final class StructList {
 
         @Override
         public boolean addAll(Collection<? extends T> c) {
-            throw new UnsupportedOperationException("This collection is immutable");
+            throw new UnsupportedOperationException("Unsupported");
         }
 
         @Override
         public boolean removeAll(Collection<?> c) {
-            throw new UnsupportedOperationException("This collection is immutable");
+            throw new UnsupportedOperationException("Unsupported");
         }
 
         @Override
         public boolean retainAll(Collection<?> c) {
-            throw new UnsupportedOperationException("This collection is immutable");
+            throw new UnsupportedOperationException("Unsupported");
         }
 
         @Override
         public void clear() {
-            throw new UnsupportedOperationException("This collection is immutable");
+            throw new UnsupportedOperationException("Unsupported");
         }
 
         public final class Iterator implements java.util.Iterator<T> {
@@ -199,7 +199,7 @@ public final class StructList {
         }
     }
 
-    public static final class Builder<T extends StructBuilder> extends ListBuilder implements Iterable<T> {
+    public static final class Builder<T extends StructBuilder> extends ListBuilder implements Collection<T> {
 
         public final StructBuilder.Factory<T> factory;
 
@@ -277,5 +277,61 @@ public final class StructList {
         public String toString() {
             return stream().map(String::valueOf).collect(Collectors.joining(","));
         }
+
+        @Override
+        public boolean isEmpty() {
+            return elementCount == 0;
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            return stream().anyMatch(o::equals);
+        }
+
+        @Override
+        public Object[] toArray() {
+            return stream().collect(Collectors.toList()).toArray();
+        }
+
+        @Override
+        public <T> T[] toArray(T[] a) {
+            return stream().collect(Collectors.toList()).toArray(a);
+        }
+
+        @Override
+        public boolean add(T e) {
+            throw new UnsupportedOperationException("Unsupported");
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            throw new UnsupportedOperationException("Unsupported");
+        }
+
+        @Override
+        public boolean containsAll(Collection<?> c) {
+            return stream().collect(Collectors.toList()).containsAll(c);
+        }
+
+        @Override
+        public boolean addAll(Collection<? extends T> c) {
+            throw new UnsupportedOperationException("Unsupported");
+        }
+
+        @Override
+        public boolean removeAll(Collection<?> c) {
+            throw new UnsupportedOperationException("Unsupported");
+        }
+
+        @Override
+        public boolean retainAll(Collection<?> c) {
+            throw new UnsupportedOperationException("Unsupported");
+        }
+
+        @Override
+        public void clear() {
+            throw new UnsupportedOperationException("Unsupported");
+        }
+
     }
 }

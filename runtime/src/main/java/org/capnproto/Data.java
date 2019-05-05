@@ -115,7 +115,7 @@ public final class Data {
 
         @Override
         public String toString() {
-            return "Data{" + "buffer=" + buffer + '}';
+            return "Data{" + new ByteBufferFormatter().format(buffer) + '}';
         }
 
     }
@@ -153,9 +153,10 @@ public final class Data {
             dup.get(result, 0, this.size);
             return result;
         }
+
         @Override
         public String toString() {
-            return "Data{" + "buffer=" + buffer + '}';
+            return "Data{" + new ByteBufferFormatter().format(buffer) + '}';
         }
     }
 }

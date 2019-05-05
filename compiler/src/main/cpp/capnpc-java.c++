@@ -867,7 +867,14 @@ private:
          spaces(indent), "  }\n"
       ).flatten();
    }
-   kj::StringTree createToString(int indent,kj::StringPtr titleCase, bool hasGet, bool hasDo){
+   kj::StringTree createToStringValue(int indent,kj::StringPtr titleCase, bool hasGet, bool hasDo){
+      if( hasDo)
+         return kj::strTree(spaces(indent),"       do",titleCase,"(v->s.append(\" ",titleCase,"=\").append(v).append(\"\"));\n" );
+      if( hasGet)
+         return kj::strTree(spaces(indent),  "       s.append(\" ",titleCase,"=\").append(get",titleCase,"()).append(\"\");\n");
+      return kj::strTree(spaces(indent),  "       /*",titleCase," has no easy way to access data */\n");
+   }
+   kj::StringTree createToStringGroup(int indent,kj::StringPtr titleCase, bool hasGet, bool hasDo){
       if( hasDo)
          return kj::strTree(spaces(indent),"       do",titleCase,"(v->s.append(\" ",titleCase,"={\").append(v).append(\"}\"));\n" );
       if( hasGet)
@@ -910,7 +917,7 @@ private:
             spaces(indent), "  }\n",
             createDoIfRequired(indent,titleCase,kj::strTree(scope,titleCase,".Reader").flatten(),isExists,hasExists),
             "\n"),
-         createToString(indent,titleCase,hasGet,hasExists||isExists),
+         createToStringGroup(indent,titleCase,hasGet,hasExists||isExists),
 //  group builder
             kj::strTree(
                kj::mv(unionDiscrim.builderIsDef),
@@ -941,7 +948,7 @@ private:
               ".Builder(segment, data, pointers, dataSize, pointerCount);\n",
               spaces(indent), "  }\n",
                "\n"),
-         createToString(indent,titleCase,hasGet,hasExists||isExists)
+         createToStringGroup(indent,titleCase,hasGet,hasExists||isExists)
          };
       }
     }
@@ -1083,7 +1090,7 @@ private:
             spaces(indent), "  }\n",
             createDoIfRequired(indent,titleCase,consumerType,isExists,hasExists),
             "\n"),
-         createToString(indent,titleCase,hasGet,hasExists||isExists),
+         createToStringValue(indent,titleCase,hasGet,hasExists||isExists),
 
           kj::strTree(
 // primitive / enum builder
@@ -1110,7 +1117,7 @@ private:
             spaces(indent), "    return this;// chain building primitive /enum\n",
             spaces(indent), "  }\n",
             "\n"),
-         createToString(indent,titleCase,hasGet,hasExists||isExists)
+         createToStringValue(indent,titleCase,hasGet,hasExists||isExists)
       };
 
     } else if (kind == FieldKind::INTERFACE) {
@@ -1137,7 +1144,7 @@ private:
             createDoIfRequired(indent,titleCase,readerType,isExists,hasExists)
 
         ),
-         createToString(indent,titleCase,hasGet,hasExists||isExists),
+         createToStringGroup(indent,titleCase,hasGet,hasExists||isExists),
 
         kj::strTree(
 // any pointer builder
@@ -1171,7 +1178,7 @@ private:
                          spaces(indent), "    return this;// chain building any builder \n",
                          spaces(indent), "  }\n")),
             "\n"),
-          createToString(indent,titleCase,hasGet,hasExists||isExists)
+          createToStringGroup(indent,titleCase,hasGet,hasExists||isExists)
      };
 
     } else if (kind == FieldKind::STRUCT) {
@@ -1198,7 +1205,7 @@ private:
           createDoIfRequired(indent,titleCase,readerType,isExists,hasExists),
           "\n"
         ),
-         createToString(indent,titleCase,hasGet,hasExists||isExists),
+         createToStringGroup(indent,titleCase,hasGet,hasExists||isExists),
 
         kj::strTree(
 // struct builder
@@ -1243,7 +1250,7 @@ private:
           spaces(indent), "    return ",
           "_initPointerField(", factoryArg, ",",  offset, ", 0);\n",
           spaces(indent), "  }\n"),
-         createToString(indent,titleCase,hasGet,hasExists||isExists)
+         createToStringGroup(indent,titleCase,hasGet,hasExists||isExists)
       };
 
     } else if (kind == FieldKind::BLOB) {
@@ -1274,7 +1281,7 @@ private:
           createDoIfRequired(indent,titleCase,readerType,isExists,hasExists),
           "\n"
         ),
-         createToString(indent,titleCase,hasGet,hasExists||isExists),
+         createToStringValue(indent,titleCase,hasGet,hasExists||isExists),
 
         kj::strTree(
 // blob builder
@@ -1303,7 +1310,7 @@ private:
           unionDiscrim.set,
           spaces(indent), "    return _initPointerField(", factory, ", ", offset, ", size);\n",
           spaces(indent), "  }\n"),
-         createToString(indent,titleCase,hasGet,hasExists||isExists)
+         createToStringValue(indent,titleCase,hasGet,hasExists||isExists)
       };
     } else if (kind == FieldKind::LIST) {
 
@@ -1361,7 +1368,7 @@ private:
              )
             ),
             "\n"),
-         createToString(indent,titleCase,hasGet,hasDo),
+         createToStringGroup(indent,titleCase,hasGet,hasDo),
 
         kj::strTree(
 // list builder
@@ -1442,7 +1449,7 @@ private:
                spaces(indent), "  }\n")
               )
           ),
-         createToString(indent,titleCase,hasGet,hasDo)
+         createToStringGroup(indent,titleCase,hasGet,hasDo)
       };
     } else {
       KJ_UNREACHABLE;
