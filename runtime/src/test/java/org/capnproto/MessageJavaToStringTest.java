@@ -12,20 +12,20 @@ public class MessageJavaToStringTest {
     @Test
     public void testDataMessage() {
         withDataMessage();
-        verifyToString("Message { Time=1030 Data=Data{8192 bytes 00 00 00 00 03 00 01 00 06 04 ...00 00 00 00 |.................}}");
-        verifyReaderToString("Message { Time=1030 Data=Data{8192 bytes 00 00 00 00 03 00 01 00 06 04 ...00 00 00 00 |.................}}");
+        verifyToString("Message { Time=(1030) Data=(Data{8192 bytes 00 00 00 00 03 00 01 00 06 04 ...00 00 00 00 00 00 |...................})}");
+        verifyReaderToString("Message { Time=(1030) Data=(Data{8192 bytes 00 00 00 00 03 00 01 00 06 04 ...00 00 00 00 00 00 |...................})}");
     }
 
     @Test
     public void testEnumMessage() {
         withEnumMessage();
-        verifyToString("Message { Time=-1030 Flag=FILE_NOT_FOUND}");
+        verifyToString("Message { Time=(-1030) Flag=(FILE_NOT_FOUND)}");
     }
 
     @Test
     public void testMixedMessage() {
         withMessages();
-        verifyToString("Message { Time=-1030 Messages={Message { Time=0 MetaData={MetaData { Size=2}}},Message { Time=0 Flag=START}}}");
+        verifyToString("Message { Time=(-1030) Messages={Message { Time=(0) MetaData={MetaData { Size=(2)}}},Message { Time=(0) Flag=(START)}}}");
     }
 
     private void verifyToString(final String result) {

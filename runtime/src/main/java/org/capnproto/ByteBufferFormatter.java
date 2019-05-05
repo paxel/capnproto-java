@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 public class ByteBufferFormatter {
 
     private int lead = 10;
-    private int tail = 4;
+    private int tail = 6;
     private boolean showSize = true;
     private boolean hex = true;
     private boolean text = true;

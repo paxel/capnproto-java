@@ -183,6 +183,10 @@ public class PrimitiveList {
                         java.lang.Integer.MAX_VALUE);
             }
 
+            public org.capnproto.Void get(int index) {
+                return org.capnproto.Void.VOID;
+            }
+
             @Override
             public boolean isEmpty() {
                 return elementCount == 0;
@@ -255,7 +259,7 @@ public class PrimitiveList {
 
                 @Override
                 public org.capnproto.Void next() {
-                    return null;
+                    return get(idx++);
                 }
 
                 @Override
@@ -272,6 +276,11 @@ public class PrimitiveList {
             @Override
             public java.util.Iterator<org.capnproto.Void> iterator() {
                 return new Iterator(this);
+            }
+
+            @Override
+            public String toString() {
+                return stream().map(String::valueOf).collect(Collectors.joining(", "));
             }
         }
     }

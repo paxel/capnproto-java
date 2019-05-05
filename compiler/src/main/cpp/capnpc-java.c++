@@ -869,9 +869,9 @@ private:
    }
    kj::StringTree createToStringValue(int indent,kj::StringPtr titleCase, bool hasGet, bool hasDo){
       if( hasDo)
-         return kj::strTree(spaces(indent),"       do",titleCase,"(v->s.append(\" ",titleCase,"=\").append(v).append(\"\"));\n" );
+         return kj::strTree(spaces(indent),"       do",titleCase,"(v->s.append(\" ",titleCase,"=(\").append(v).append(\")\"));\n" );
       if( hasGet)
-         return kj::strTree(spaces(indent),  "       s.append(\" ",titleCase,"=\").append(get",titleCase,"()).append(\"\");\n");
+         return kj::strTree(spaces(indent),  "       s.append(\" ",titleCase,"=(\").append(get",titleCase,"()).append(\")\");\n");
       return kj::strTree(spaces(indent),  "       /*",titleCase," has no easy way to access data */\n");
    }
    kj::StringTree createToStringGroup(int indent,kj::StringPtr titleCase, bool hasGet, bool hasDo){
