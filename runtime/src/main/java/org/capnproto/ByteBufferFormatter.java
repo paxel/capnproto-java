@@ -4,11 +4,11 @@ import java.nio.ByteBuffer;
 
 public class ByteBufferFormatter {
 
-    private int lead = 10;
-    private int tail = 6;
-    private boolean showSize = true;
-    private boolean hex = true;
-    private boolean text = true;
+    private int lead = ByteBufferFormatterDefaults.getLead();
+    private int tail = ByteBufferFormatterDefaults.getTail();
+    private boolean showSize = ByteBufferFormatterDefaults.isShowSize();
+    private boolean hex = ByteBufferFormatterDefaults.isPrintHex();
+    private boolean text = ByteBufferFormatterDefaults.isPrintText();
 
     public int getLead() {
         return lead;
