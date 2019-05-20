@@ -9,6 +9,7 @@ and capabilities, and capnproto-java is a pure Java implementation.
 Improvements that have been introduced here:
 
 ## TAG 2.0.0-rc003
+Inject an Allocator into SessionBuilder to manage Memory (merged from upstream)
 copying data from Reader to Builder is now bulked for bigger data.
 setWithCaveats for StructListBuilder (merged from upstream)
 ```java
