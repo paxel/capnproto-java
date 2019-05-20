@@ -53,8 +53,43 @@ public final class MessageBuilder {
                 allocationStrategy);
     }
 
+    /**
+     * Constructs a new MessageBuilder from an Allocator.
+     */
+    public MessageBuilder(Allocator allocator) {
+        this.arena = new BuilderArena(allocator);
+    }
+
+    /**
+     * Constructs a new MessageBuilder from an Allocator and a given first segment buffer.
+     * This is useful for reusing the first segment buffer between messages, to avoid
+     * repeated allocations.
+     *
+     * You MUST ensure that firstSegment contains only zeroes before calling this method.
+     * If you are reusing firstSegment from another message, then it suffices to call
+     * clearFirstSegment() on that message.
+     */
+    public MessageBuilder(Allocator allocator, java.nio.ByteBuffer firstSegment) {
+        this.arena = new BuilderArena(allocator, firstSegment);
+    }
+
+    /**
+     * Like the previous constructor, but uses a DefaultAllocator.
+     *
+     * You MUST ensure that firstSegment contains only zeroes before calling this method.
+     * If you are reusing firstSegment from another message, then it suffices to call
+     * clearFirstSegment() on that message.
+     */
+    public MessageBuilder(java.nio.ByteBuffer firstSegment) {
+        this.arena = new BuilderArena(new DefaultAllocator(), firstSegment);
+    }
+
+
     private AnyPointer.Builder getRootInternal() {
-        GenericSegmentBuilder rootSegment = this.arena.tryGetSegment(0);
+        if (this.arena.getSegments().isEmpty()) {
+            this.arena.allocate(1);
+        }
+        GenericSegmentBuilder rootSegment = this.arena.getSegments().get(0);
         if (rootSegment.currentSize() == 0) {
             int location = rootSegment.allocate(1);
             if (location == GenericSegmentBuilder.FAILED_ALLOCATION) {
@@ -141,5 +176,16 @@ public final class MessageBuilder {
                 outputChannel.write(buffer);
             }
         }
+    }
+
+    /**
+     * Sets the first segment buffer to contain all zeros so that it can be reused in
+     * another message. (See the MessageBuilder(Allocator, ByteBuffer) constructor above.)
+     *
+     * After calling this method, the message will be corrupted. Therefore, you need to make
+     * sure to write the message (via getSegmentsForOutput()) before calling this.
+     */
+    public final void clearFirstSegment() {
+        this.arena.getSegments().get(0).clear();
     }
 }

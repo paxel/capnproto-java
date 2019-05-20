@@ -25,6 +25,8 @@ import java.nio.ByteOrder;
 
 public final class SegmentBuilder implements GenericSegmentBuilder {
 
+    private static final int ERAZER_SIZE = 8000;
+
     public int pos = 0; // in words
     public int id = 0;
     public final ByteBuffer buffer;
@@ -107,5 +109,23 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
     @Override
     public long get(int index) {
         return buffer.getLong(index * Constants.BYTES_PER_WORD);
+    }
+
+    @Override
+    public final void clear() {
+        int posInBytes = pos * Constants.BYTES_PER_WORD;
+        byte[] erazer = new byte[ERAZER_SIZE];
+        // write the erazer into buffer until the erazer is too big for the remaining data.
+        int current = 0;
+        buffer.position(0);
+        while (posInBytes - current > ERAZER_SIZE) {
+            buffer.put(erazer);
+            current += ERAZER_SIZE;
+        }
+        // write a fraction of the erazer into the buffer and reset all
+        int remaining = posInBytes - current;
+        buffer.put(erazer, 0, remaining);
+        buffer.position(0);
+        this.pos = 0;
     }
 }

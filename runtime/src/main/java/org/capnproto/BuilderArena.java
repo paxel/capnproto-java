@@ -37,18 +37,49 @@ public final class BuilderArena implements AllocatingArena {
             = AllocationStrategy.GROW_HEURISTICALLY;
 
     public final ArrayList<GenericSegmentBuilder> segments;
+    private final Allocator allocator;
 
-    public int nextSize;
-    public final AllocationStrategy allocationStrategy;
-
+    /**
+     * Constructs a BuilderArena with a default Allocator, that acts according
+     * to the {@link AllocationStrategy}.
+     *
+     * @param firstSegmentSizeWords The size of the first segment. (allocated on
+     * demand)
+     * @param allocationStrategy The allocation strategy.
+     */
     public BuilderArena(int firstSegmentSizeWords, AllocationStrategy allocationStrategy) {
         this.segments = new ArrayList<>();
-        this.nextSize = firstSegmentSizeWords;
-        this.allocationStrategy = allocationStrategy;
-        GenericSegmentBuilder segment0 = new SegmentBuilder(
-                ByteBuffer.allocate(firstSegmentSizeWords * Constants.BYTES_PER_WORD), this);
-        segment0.getBuffer().order(ByteOrder.LITTLE_ENDIAN);
-        this.segments.add(segment0);
+        allocator = new DefaultAllocator(allocationStrategy);
+        ((DefaultAllocator) allocator).setNextAllocationSizeBytes(firstSegmentSizeWords * Constants.BYTES_PER_WORD);
+    }
+
+    /**
+     * Constructs a BuilderArena with an Allocator.
+     *
+     * @param allocator is used to allocate memory for each segment.
+     */
+    public BuilderArena(Allocator allocator) {
+        this.segments = new ArrayList<>();
+        this.allocator = allocator;
+    }
+
+    /**
+     * Constructs a BuilderArena with an immediately allocated first segment of
+     * given size. The Allocator is not used for the first segment.
+     *
+     * @param allocator The allocator for other segments.
+     * @param firstSegment The first segment.
+     */
+    public BuilderArena(Allocator allocator, ByteBuffer firstSegment) {
+        this.segments = new ArrayList<>();
+        SegmentBuilder newSegment = new SegmentBuilder(
+                firstSegment,
+                this);
+        newSegment.buffer.order(ByteOrder.LITTLE_ENDIAN);
+        newSegment.id = 0;
+        this.segments.add(newSegment);
+
+        this.allocator = allocator;
     }
 
     @Override
@@ -80,30 +111,19 @@ public final class BuilderArena implements AllocatingArena {
 
     @Override
     public AllocateResult allocate(int amount) {
-
         int len = this.segments.size();
+
         // we allocate the first segment in the constructor.
-
-        int result = this.segments.get(len - 1).allocate(amount);
-        if (result != GenericSegmentBuilder.FAILED_ALLOCATION) {
-            return new AllocateResult(this.segments.get(len - 1), result);
+        if (len > 0) {
+            int result = this.segments.get(len - 1).allocate(amount);
+            if (result != SegmentBuilder.FAILED_ALLOCATION) {
+                return new AllocateResult(this.segments.get(len - 1), result);
+            }
         }
-
-        // allocate_owned_memory
-        int size = Math.max(amount, this.nextSize);
-        GenericSegmentBuilder newSegment = new SegmentBuilder(
-                ByteBuffer.allocate(size * Constants.BYTES_PER_WORD),
+        SegmentBuilder newSegment = new SegmentBuilder(
+                this.allocator.allocateSegment(amount * Constants.BYTES_PER_WORD),
                 this);
 
-        switch (this.allocationStrategy) {
-            case GROW_HEURISTICALLY:
-                this.nextSize += size;
-                break;
-            default:
-                break;
-        }
-
-        // --------
         newSegment.getBuffer().order(ByteOrder.LITTLE_ENDIAN);
         newSegment.setId(len);
         this.segments.add(newSegment);

@@ -90,4 +90,9 @@ public interface GenericSegmentBuilder extends SegmentDataContainer {
      */
     ByteBuffer getSegmentForOutput();
 
+    /**
+     * Writes zeroes in the occupied space of the Segment.
+     */
+    void clear();
+
 }
