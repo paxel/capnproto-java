@@ -1604,6 +1604,9 @@ private:
           kj::strTree(KJ_MAP(p, typeParamVec) {
               return kj::strTree(spaces(indent), "    final org.capnproto.PointerFactory<", p, "_Builder, ?> ", p, "_Factory;\n");
             }),
+                    
+                    
+          // constructor and init start (Builder)
           spaces(indent+1), "  Builder(",
           KJ_MAP(p, typeParamVec) {
             return kj::strTree("org.capnproto.PointerFactory<", p, "_Builder, ?> ", p, "_Factory,");
@@ -1615,6 +1618,8 @@ private:
             return kj::strTree(spaces(indent), "      this.", p, "_Factory = ", p, "_Factory;\n");
           },
           spaces(indent+1), "  }\n",
+          // constructor and init end
+                  
           spaces(indent), "    @Override\n",
           spaces(indent), "    public String toString() {\n",
           spaces(indent), "       StringBuilder s = new StringBuilder(\"",name," {\");\n",
@@ -1643,17 +1648,36 @@ private:
           KJ_MAP(p, typeParamVec) {
               return kj::strTree(spaces(indent), "    final org.capnproto.PointerFactory<?,", p, "_Reader> ", p, "_Factory;\n");
             },
-          spaces(indent+1), "  Reader(",
+                  
+                  // constructor and init start
+                  
+                  // The initialized constructor
+          spaces(indent+1), "  public Reader(",
           KJ_MAP(p, typeParamVec) {
             return kj::strTree("org.capnproto.PointerFactory<?,", p, "_Reader> ", p, "_Factory,");
           },
-          "org.capnproto.SegmentDataContainer segment, int data, int pointers,",
-          "int dataSize, short pointerCount, int nestingLimit){\n",
+          "org.capnproto.SegmentDataContainer segment, int data, int pointers,int dataSize, short pointerCount, int nestingLimit){\n",
           spaces(indent+1), "    super(segment, data, pointers, dataSize, pointerCount, nestingLimit);\n",
           KJ_MAP(p, typeParamVec) {
             return kj::strTree(spaces(indent), "      this.", p, "_Factory = ", p, "_Factory;\n");
           },
           spaces(indent+1), "  }\n",
+                  // The initialized constructor
+          spaces(indent+1), "  public Reader(",
+                  kj::strTree(          KJ_MAP(p, typeParamVec) {
+            return kj::strTree("org.capnproto.PointerFactory<?,", p, "_Reader> ", p, "_Factory,");
+          }),// TODO: in generic, the previous line ends with a ',' I don't know how to get rid of it, so I add a dummy parameter for the time being.
+                  ((typeParamVec.size()==0)?")":
+          "int ignoreMe)"),
+                  // End TODO
+          "{\n",
+          spaces(indent+1), "    super();\n",
+          KJ_MAP(p, typeParamVec) {
+            return kj::strTree(spaces(indent), "      this.", p, "_Factory = ", p, "_Factory;\n");
+          },
+          spaces(indent+1), "  }\n",
+
+                  // constructor and init end
 
           spaces(indent), "    @Override\n",
           spaces(indent), "    public String toString() {\n",
