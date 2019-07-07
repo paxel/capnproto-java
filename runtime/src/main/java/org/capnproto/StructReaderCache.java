@@ -42,7 +42,7 @@ public class StructReaderCache<T extends StructReader> {
         reader.onRecycle(f -> {
             // first deinit, then put to queue, to avoid racing conditions
             f.deinit();
-            recycler.add((T) f);
+            recycler.offer((T) f);
         });
     }
 }
