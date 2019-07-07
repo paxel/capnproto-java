@@ -912,6 +912,7 @@ private:
             kj::strTree(
                kj::mv(unionDiscrim.readerIsDef),
             spaces(indent), "  public ", titleCase, ".Reader get", titleCase, "() {\n",
+            spaces(indent), "       validator.run();\n",
             spaces(indent), "    return new ", scope, titleCase,
             ".Reader(segment, data, pointers, dataSize, pointerCount, nestingLimit);\n",
             spaces(indent), "  }\n",
@@ -1080,6 +1081,7 @@ private:
 // primitive / enum reader
             kj::mv(unionDiscrim.readerIsDef),
             spaces(indent), "  public final ", readerType, " get", titleCase, "() {\n",
+            spaces(indent), "       validator.run();\n",                
             unionDiscrim.check,
             (typeBody.which() == schema::Type::ENUM ?
              makeEnumGetter(field.getType().asEnum(),
@@ -1138,6 +1140,7 @@ private:
             spaces(indent), "  }\n",
 
             spaces(indent), "  public ", readerType, " get", titleCase, "() {\n",
+          spaces(indent), "       validator.run();\n",
             unionDiscrim.check,
             spaces(indent), "    return _getPointerField(", factoryArg, ", ", offset, ");\n",
             spaces(indent), "  }\n",
@@ -1198,6 +1201,7 @@ private:
           spaces(indent), "  }\n",
 
           spaces(indent), "  public ", readerType, " get", titleCase, "() {\n",
+          spaces(indent), "       validator.run();\n",
           unionDiscrim.check,
           spaces(indent), "    return ",
           "_getPointerField(", factoryArg, ",", offset,",", defaultParams, ");\n",
@@ -1273,8 +1277,8 @@ private:
           spaces(indent), "    return !_pointerFieldIsNull(", offset, ");\n",
           spaces(indent), "  }\n",
 
-          spaces(indent), "  public ", readerType,
-          " get", titleCase, "() {\n",
+          spaces(indent), "  public ", readerType," get", titleCase, "() {\n",
+          spaces(indent), "       validator.run();\n",
           spaces(indent), "    return _getPointerField(", factory, ", ",
           offset, ", ", defaultParams, ");\n",
           spaces(indent), "  }\n", 
@@ -1356,6 +1360,7 @@ private:
                   "> ")),
                readerType,
                " get", titleCase, "( org.capnproto.ListFactory<", builderType, ", ", readerType, "> factory) {\n",
+               spaces(indent), "       validator.run();\n",
                spaces(indent), "    return _getPointerField(factory,", offset, ");\n",
                spaces(indent), "  }\n"
                ) :
@@ -1689,6 +1694,7 @@ private:
 
           spaces(indent), "    @Override\n",
           spaces(indent), "    public String toString() {\n",
+          spaces(indent), "       validator.run();\n",
           spaces(indent), "       StringBuilder s = new StringBuilder(\"",name," {\");\n",
           KJ_MAP(f, fieldTexts) { return kj::mv(f.readerToString); },
           spaces(indent), "       return s.append(\"}\").toString();\n",

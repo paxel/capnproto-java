@@ -4,10 +4,16 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.function.Supplier;
 
+/**
+ * This is a cache for one type of StructReader. It is only filled with
+ * StructReader on which recycle() is called.
+ *
+ * @param <T> The type of the StructReader.
+ */
 public class StructReaderCache<T extends StructReader> {
 
-    private final Queue<T> cache = new ArrayBlockingQueue<>(CACHE_LIMIT);
-    private static final int CACHE_LIMIT = 500;
+    private final Queue<T> recycler = new ArrayBlockingQueue<>(CACHE_LIMIT);
+    private static final int CACHE_LIMIT = 256;
 
     private final Supplier<T> factory;
 
@@ -15,16 +21,29 @@ public class StructReaderCache<T extends StructReader> {
         this.factory = factory;
     }
 
+    /**
+     * Provides a new StructReader if the Queue is empty, or the oldes Reader
+     * from the recycler queue.
+     *
+     * @return a new or a recycled T.
+     */
     public T getOrCreate() {
-        T reuse = cache.poll();
-        if (reuse != null) {
-            return reuse;
+        T recycled = recycler.poll();
+        if (recycled != null) {
+            // We are the only one that removed that from the queue, so no racing condition here
+            activateRecycler(recycled);
+            return recycled;
         }
         final T newReader = factory.get();
-        newReader.onReuse(f -> {
-            f.deinit();
-            cache.add((T) f);
-        });
+        activateRecycler(newReader);
         return newReader;
+    }
+
+    private void activateRecycler(final T reader) {
+        reader.onRecycle(f -> {
+            // first deinit, then put to queue, to avoid racing conditions
+            f.deinit();
+            recycler.add((T) f);
+        });
     }
 }

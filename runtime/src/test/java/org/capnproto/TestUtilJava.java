@@ -3,7 +3,6 @@ package org.capnproto;
 import org.capnproto.test.Test;
 import org.capnproto.test.Test.TestEnum;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 
 public class TestUtilJava {
@@ -166,23 +165,23 @@ public class TestUtilJava {
         assertThat(enumList.get(1), is((TestEnum.GARPLY)));
     }
 
-    static void checkTestMessage(Test.TestAllTypes.Reader builder) {
-        builder.getVoidField();
-        assertThat(builder.getBoolField(), is(true));
-        assertThat(builder.getInt8Field(), is((byte) -123));
-        assertThat(builder.getInt16Field(), is((short) -12345));
-        assertThat(builder.getInt32Field(), is(-12345678));
-        assertThat(builder.getInt64Field(), is(-123456789012345L));
-        assertThat(builder.getUInt8Field(), is((byte) 0xea));
-        assertThat(builder.getUInt16Field(), is((short) 0x4567));
-        assertThat(builder.getUInt32Field(), is(0x34567890));
-        assertThat(builder.getUInt64Field(), is(0x1234567890123456L));
-        assertThat(builder.getFloat32Field(), is(1234.5f));
-        assertThat(builder.getFloat64Field(), is(-123e45));
-        assertThat(builder.getTextField().toString(), is("foo"));
+    static void checkTestMessage(Test.TestAllTypes.Reader reader) {
+        reader.getVoidField();
+        assertThat(reader.getBoolField(), is(true));
+        assertThat(reader.getInt8Field(), is((byte) -123));
+        assertThat(reader.getInt16Field(), is((short) -12345));
+        assertThat(reader.getInt32Field(), is(-12345678));
+        assertThat(reader.getInt64Field(), is(-123456789012345L));
+        assertThat(reader.getUInt8Field(), is((byte) 0xea));
+        assertThat(reader.getUInt16Field(), is((short) 0x4567));
+        assertThat(reader.getUInt32Field(), is(0x34567890));
+        assertThat(reader.getUInt64Field(), is(0x1234567890123456L));
+        assertThat(reader.getFloat32Field(), is(1234.5f));
+        assertThat(reader.getFloat64Field(), is(-123e45));
+        assertThat(reader.getTextField().toString(), is("foo"));
 
         {
-            Test.TestAllTypes.Reader subReader = builder.getStructField();
+            Test.TestAllTypes.Reader subReader = reader.getStructField();
             subReader.getVoidField();
             assertThat(subReader.getBoolField(), is(true));
             assertThat(subReader.getInt8Field(), is((byte) -12));
@@ -211,36 +210,36 @@ public class TestUtilJava {
             assertThat(boolList.get(4), is(true));
 
         }
-        assertThat(builder.getEnumField(), is(TestEnum.CORGE));
+        assertThat(reader.getEnumField(), is(TestEnum.CORGE));
 
-        assertThat(builder.getVoidList().size(), is(6));
+        assertThat(reader.getVoidList().size(), is(6));
 
-        PrimitiveList.Boolean.Reader boolList = builder.getBoolList();
+        PrimitiveList.Boolean.Reader boolList = reader.getBoolList();
         assertThat(boolList.size(), is(4));
         assertThat(boolList.get(0), is(true));
         assertThat(boolList.get(1), is(false));
         assertThat(boolList.get(2), is(false));
         assertThat(boolList.get(3), is(true));
 
-        PrimitiveList.Double.Reader float64List = builder.getFloat64List();
+        PrimitiveList.Double.Reader float64List = reader.getFloat64List();
         assertThat(float64List.get(0), is(7777.75));
         assertThat(float64List.get(1), is(Double.POSITIVE_INFINITY));
         assertThat(float64List.get(2), is(Double.NEGATIVE_INFINITY));
         assertThat(float64List.get(3), is(Double.NaN)); // NaN
 
-        TextList.Reader textList = builder.getTextList();
+        TextList.Reader textList = reader.getTextList();
         assertThat(textList.size(), is(3));
         assertThat(textList.get(0).toString(), is("plugh"));
         assertThat(textList.get(1).toString(), is("xyzzy"));
         assertThat(textList.get(2).toString(), is("thud"));
 
-        StructList.Reader<Test.TestAllTypes.Reader> structList = builder.getStructList();
+        StructList.Reader<Test.TestAllTypes.Reader> structList = reader.getStructList();
         assertThat(3, is(structList.size()));
         assertThat(structList.get(0).getTextField().toString(), is("structlist 1"));
         assertThat(structList.get(1).getTextField().toString(), is("structlist 2"));
         assertThat(structList.get(2).getTextField().toString(), is("structlist 3"));
 
-        EnumList.Reader<TestEnum> enumList = builder.getEnumList();
+        EnumList.Reader<TestEnum> enumList = reader.getEnumList();
         assertThat(enumList.get(0), is((TestEnum.FOO)));
         assertThat(enumList.get(1), is((TestEnum.GARPLY)));
     }
