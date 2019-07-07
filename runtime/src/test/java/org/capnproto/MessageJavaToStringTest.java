@@ -12,8 +12,8 @@ public class MessageJavaToStringTest {
     @Test
     public void testDataMessage() {
         withDataMessage();
-        verifyToString("Message { Time=(1030) Data=(Data{8192 bytes 00 00 00 00 03 00 01 00 06 04 ...00 00 00 00 00 00 |...................})}");
-        verifyReaderToString("Message { Time=(1030) Data=(Data{8192 bytes 00 00 00 00 03 00 01 00 06 04 ...00 00 00 00 00 00 |...................})}");
+        verifyToString("Message { Time=(1030) Data=(Data{100 bytes 00 00 00 00 00 00 00 00 00 00 ...00 00 00 00 00 00 |...................})}");
+        verifyReaderToString("Message { Time=(1030) Data=(Data{100 bytes 00 00 00 00 00 00 00 00 00 00 ...00 00 00 00 00 00 |...................})}");
     }
 
     @Test

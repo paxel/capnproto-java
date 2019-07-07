@@ -115,7 +115,7 @@ public final class Data {
 
         @Override
         public String toString() {
-            return "Data{" + new ByteBufferFormatter().format(buffer) + '}';
+            return "Data{" + new ByteBufferFormatter().format(asByteBuffer()) + '}';
         }
 
     }
@@ -156,7 +156,7 @@ public final class Data {
 
         @Override
         public String toString() {
-            return "Data{" + new ByteBufferFormatter().format(buffer) + '}';
+            return "Data{" + new ByteBufferFormatter().format(asByteBuffer()) + '}';
         }
     }
 }
