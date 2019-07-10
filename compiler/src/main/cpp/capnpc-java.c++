@@ -1689,7 +1689,11 @@ private:
             return kj::strTree(spaces(indent), "      this.", p, "_Factory = ", p, "_Factory;\n");
           },
           spaces(indent+1), "  }\n",
-
+         spaces(indent+1), "  Reader init(org.capnproto.SegmentDataContainer segment, int data, int pointers,int dataSize, short pointerCount, int nestingLimit){\n",
+          spaces(indent+1), "    super._init(segment, data, pointers, dataSize, pointerCount, nestingLimit);\n",
+          spaces(indent+1), "    return this;\n",
+          spaces(indent+1), "  }\n",
+ 
                   // constructor and init end
 
           spaces(indent), "    @Override\n",

@@ -41,14 +41,14 @@ public class StructReader {
         throw new IllegalStateException("This reader is not initialized.");
     };
 
-    protected volatile SegmentDataContainer segment;
-    protected volatile int data; //byte offset to data section
-    protected volatile int pointers; // word offset of pointer section
-    protected volatile int dataSize; // in bits
-    protected volatile short pointerCount;
-    protected volatile int nestingLimit;
-    protected volatile Runnable validator = VALIDATOR_DEINIT;
-    private volatile Consumer<StructReader> recycleAction = f -> {
+    protected SegmentDataContainer segment;
+    protected int data; //byte offset to data section
+    protected int pointers; // word offset of pointer section
+    protected int dataSize; // in bits
+    protected short pointerCount;
+    protected int nestingLimit;
+    protected Runnable validator = VALIDATOR_DEINIT;
+    private Consumer<StructReader> recycleAction = f -> {
     };
 
     public StructReader() {
@@ -56,10 +56,10 @@ public class StructReader {
     }
 
     public StructReader(SegmentDataContainer segment, int data, int pointers, int dataSize, short pointerCount, int nestingLimit) {
-        init(segment, data, pointers, dataSize, pointerCount, nestingLimit);
+        _init(segment, data, pointers, dataSize, pointerCount, nestingLimit);
     }
 
-   public final void init(SegmentDataContainer segment, int data, int pointers, int dataSize, short pointerCount, int nestingLimit) {
+    protected final StructReader _init(SegmentDataContainer segment, int data, int pointers, int dataSize, short pointerCount, int nestingLimit) {
         this.segment = segment;
         this.data = data;
         this.pointers = pointers;
@@ -67,6 +67,7 @@ public class StructReader {
         this.pointerCount = pointerCount;
         this.nestingLimit = nestingLimit;
         validator = VALIDATOR_INIT;
+        return this;
     }
 
     final void deinit() {
