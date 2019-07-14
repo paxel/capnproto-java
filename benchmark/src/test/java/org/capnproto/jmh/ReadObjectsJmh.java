@@ -8,8 +8,12 @@ import java.nio.channels.Channels;
 import java.util.concurrent.TimeUnit;
 import org.capnproto.AllocatedArenaBuilder;
 import org.capnproto.ArrayInputStream;
+import org.capnproto.FromPointerReader;
 import org.capnproto.MessageBuilder;
-import org.capnproto.ReaderOptions;
+import org.capnproto.MessageReader;
+import org.capnproto.StructList;
+import org.capnproto.StructReader;
+import org.capnproto.Text;
 import org.capnproto.benchmark.CarSalesSchema;
 import org.capnproto.benchmark.DataSchema;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -48,8 +52,36 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class ReadObjectsJmh {
 
-    private void read(byte[] bb, Blackhole hole, AllocatedArenaBuilder builder) throws IOException {
-        hole.consume(builder.build(ByteBuffer.wrap(bb)));
+    private <S extends StructReader> void read(byte[] bb, Blackhole hole, AllocatedArenaBuilder builder, FromPointerReader<S> factory) throws IOException {
+        hole.consume(new MessageReader(builder.build(ByteBuffer.wrap(bb))).getRoot(factory));
+    }
+
+    private void readRecycle(byte[] bb, AllocatedArenaBuilder builder, FromPointerReader<CarSalesSchema.Car.Reader> factory) throws IOException {
+        final CarSalesSchema.Car.Reader root = new MessageReader(builder.build(ByteBuffer.wrap(bb))).getRoot(factory);
+        if (root.hasEngine()) {
+            CarSalesSchema.Engine.Reader engine = root.getEngine();
+            engine.recycle();
+        }
+        if (root.hasWheels()) {
+            StructList.Reader<CarSalesSchema.Wheel.Reader> model = root.getWheels();
+            model.forEach(wheel -> {
+                wheel.recycle();
+            });
+        }
+        root.recycle();
+    }
+
+    private void readNoRecycle(byte[] bb, AllocatedArenaBuilder builder, FromPointerReader<CarSalesSchema.Car.Reader> factory) throws IOException {
+        final CarSalesSchema.Car.Reader root = new MessageReader(builder.build(ByteBuffer.wrap(bb))).getRoot(factory);
+        if (root.hasEngine()) {
+            CarSalesSchema.Engine.Reader engine = root.getEngine();
+        }
+        if (root.hasWheels()) {
+            StructList.Reader<CarSalesSchema.Wheel.Reader> model = root.getWheels();
+            model.forEach(wheel -> {
+
+            });
+        }
     }
 
     private void readChannel(byte[] data, Blackhole hole, AllocatedArenaBuilder builder) throws IOException {
@@ -125,17 +157,27 @@ public class ReadObjectsJmh {
 
     @Benchmark
     public void readByteBufferCarReaderArena(Blackhole hole, DataProvider data) throws IOException {
-        read(data.car, hole, data.getBuilder());
+        read(data.car, hole, data.getBuilder(), CarSalesSchema.Car.factory);
+    }
+
+    @Benchmark
+    public void recycleOnByteBufferCarReaderArena(DataProvider data) throws IOException {
+        readRecycle(data.car, data.getBuilder(), CarSalesSchema.Car.factory);
+    }
+
+    @Benchmark
+    public void recycleOffByteBufferCarReaderArena(DataProvider data) throws IOException {
+        readNoRecycle(data.car, data.getBuilder(), CarSalesSchema.Car.factory);
     }
 
     @Benchmark
     public void readByteBufferParkingLotWith1000CarsReaderArena(Blackhole hole, DataProvider data) throws IOException {
-        read(data.lot, hole, data.getBuilder());
+        read(data.lot, hole, data.getBuilder(), CarSalesSchema.ParkingLot.factory);
     }
 
     @Benchmark
     public void readByteBuffer100kDataReaderArena(Blackhole hole, DataProvider data) throws IOException {
-        read(data.data, hole, data.getBuilder());
+        read(data.data, hole, data.getBuilder(), DataSchema.Message.factory);
     }
 
     @Benchmark

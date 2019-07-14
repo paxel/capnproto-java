@@ -904,16 +904,11 @@ final class WireHelpers {
 
     }
 
-    static <T> T readStructPointer(StructReader.Factory<T> factory,
-            SegmentDataContainer segment,
-            int refOffset,
-            SegmentDataContainer defaultSegment,
-            int defaultOffset,
-            int nestingLimit) {
+    static <T extends StructReader> T readStructPointer(StructReaderCacheFactory cacheFactory, StructReader.Factory<T> factory, SegmentDataContainer segment, int refOffset, SegmentDataContainer defaultSegment, int defaultOffset, int nestingLimit) {
         long ref = segment.get(refOffset);
         if (WirePointer.isNull(ref)) {
             if (defaultSegment == null) {
-                return factory.constructReader(GenericSegmentReader.EMPTY, 0, 0, 0, (short) 0, 0x7fff_ffff);
+                return factory.constructReader( cacheFactory, GenericSegmentReader.EMPTY, 0, 0, 0, (short) 0, 0x7fff_ffff);
             } else {
                 segment = defaultSegment;
                 refOffset = defaultOffset;
@@ -936,7 +931,7 @@ final class WireHelpers {
 
         resolved.segment.getArena().checkReadLimit(StructPointer.wordSize(resolved.ref));
 
-        return factory.constructReader(resolved.segment,
+        return factory.constructReader(cacheFactory, resolved.segment,
                 resolved.ptr * Constants.BYTES_PER_WORD,
                 (resolved.ptr + dataSizeWords),
                 dataSizeWords * Constants.BITS_PER_WORD,
@@ -1078,8 +1073,7 @@ final class WireHelpers {
         dstDup.put(srcDup);
     }
 
-    static GenericSegmentBuilder copyPointer(GenericSegmentBuilder dstSegment, int dstOffset,
-            SegmentDataContainer srcSegment, int srcOffset, int nestingLimit) {
+    static GenericSegmentBuilder copyPointer(GenericSegmentBuilder dstSegment, int dstOffset, SegmentDataContainer srcSegment, int srcOffset, int nestingLimit) {
         // Deep-copy the object pointed to by src into dst.  It turns out we can't reuse
         // readStructPointer(), etc. because they do type checking whereas here we want to accept any
         // valid pointer.
@@ -1101,7 +1095,7 @@ final class WireHelpers {
                 }
                 resolved.segment.getArena().checkReadLimit(StructPointer.wordSize(resolved.ref));
                 return setStructPointer(dstSegment, dstOffset,
-                        new StructReader(resolved.segment,
+                        new StructReader(StructReaderCacheFactory.DEFAULT, resolved.segment,
                                 resolved.ptr * Constants.BYTES_PER_WORD,
                                 resolved.ptr + StructPointer.dataSize(resolved.ref),
                                 StructPointer.dataSize(resolved.ref) * Constants.BITS_PER_WORD,

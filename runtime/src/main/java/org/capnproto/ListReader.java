@@ -18,17 +18,19 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
 
 public class ListReader {
+
     public interface Factory<T> {
-        T constructReader(SegmentDataContainer segment,
-                          int ptr,
-                          int elementCount, int step,
-                          int structDataSize, short structPointerCount,
-                          int nestingLimit);
+
+        T constructReader(StructReaderCacheFactory cacheFactory, SegmentDataContainer segment,
+                int ptr,
+                int elementCount, int step,
+                int structDataSize, short structPointerCount,
+                int nestingLimit);
     }
+    private StructReaderCacheFactory cacheFactory;
 
     final SegmentDataContainer segment;
     final int ptr; // byte offset to front of list
@@ -46,12 +48,18 @@ public class ListReader {
         this.structDataSize = 0;
         this.structPointerCount = 0;
         this.nestingLimit = 0x7fff_ffff;
+        this.cacheFactory=StructReaderCacheFactory.DEFAULT;
     }
 
-    public ListReader(SegmentDataContainer segment, int ptr,
-                      int elementCount, int step,
-                      int structDataSize, short structPointerCount,
-                      int nestingLimit) {
+    public StructReaderCacheFactory getCacheFactory() {
+        return cacheFactory;
+    }
+
+    public ListReader(StructReaderCacheFactory cacheFactory, SegmentDataContainer segment, int ptr,
+            int elementCount, int step,
+            int structDataSize, short structPointerCount,
+            int nestingLimit) {
+        this.cacheFactory = cacheFactory;
         this.segment = segment;
         this.ptr = ptr;
         this.elementCount = elementCount;
@@ -67,60 +75,60 @@ public class ListReader {
     }
 
     protected boolean _getBooleanElement(int index) {
-        long bindex = (long)index * this.step;
-        byte b = this.segment.getBuffer().get(this.ptr + (int)(bindex / Constants.BITS_PER_BYTE));
+        long bindex = (long) index * this.step;
+        byte b = this.segment.getBuffer().get(this.ptr + (int) (bindex / Constants.BITS_PER_BYTE));
         return (b & (1 << (bindex % 8))) != 0;
     }
 
     protected byte _getByteElement(int index) {
-        return this.segment.getBuffer().get(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE));
+        return this.segment.getBuffer().get(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE));
     }
 
     protected short _getShortElement(int index) {
-        return this.segment.getBuffer().getShort(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE));
+        return this.segment.getBuffer().getShort(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE));
     }
 
     protected int _getIntElement(int index) {
-        return this.segment.getBuffer().getInt(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE));
+        return this.segment.getBuffer().getInt(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE));
     }
 
     protected long _getLongElement(int index) {
-        return this.segment.getBuffer().getLong(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE));
+        return this.segment.getBuffer().getLong(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE));
     }
 
     protected float _getFloatElement(int index) {
-        return this.segment.getBuffer().getFloat(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE));
+        return this.segment.getBuffer().getFloat(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE));
     }
 
     protected double _getDoubleElement(int index) {
-        return this.segment.getBuffer().getDouble(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE));
+        return this.segment.getBuffer().getDouble(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE));
     }
 
-    protected <T> T _getStructElement(StructReader.Factory<T> factory, int index) {
+    protected <T extends StructReader> T _getStructElement(StructReaderCacheFactory cacheFactory, StructReader.Factory<T> factory, int index) {
         // TODO check nesting limit
 
-        long indexBit = (long)index * this.step;
-        int structData = this.ptr + (int)(indexBit / Constants.BITS_PER_BYTE);
+        long indexBit = (long) index * this.step;
+        int structData = this.ptr + (int) (indexBit / Constants.BITS_PER_BYTE);
         int structPointers = structData + (this.structDataSize / Constants.BITS_PER_BYTE);
 
-        return factory.constructReader(this.segment, structData, structPointers / 8, this.structDataSize,
-                                       this.structPointerCount, this.nestingLimit - 1);
+        return factory.constructReader(cacheFactory, this.segment, structData, structPointers / 8, this.structDataSize,
+                this.structPointerCount, this.nestingLimit - 1);
     }
 
-    protected <T> T _getPointerElement(FromPointerReader<T> factory, int index) {
-        return factory.fromPointerReader(this.segment,
-                                         (this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE)) / Constants.BYTES_PER_WORD,
-                                         this.nestingLimit);
+    protected <T> T _getPointerElement(StructReaderCacheFactory cacheFactory, FromPointerReader<T> factory, int index) {
+        return factory.fromPointerReader(cacheFactory, this.segment,
+                (this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE)) / Constants.BYTES_PER_WORD,
+                this.nestingLimit);
     }
 
     protected <T> T _getPointerElement(FromPointerReaderBlobDefault<T> factory, int index,
-                                       java.nio.ByteBuffer defaultBuffer, int defaultOffset, int defaultSize) {
+            java.nio.ByteBuffer defaultBuffer, int defaultOffset, int defaultSize) {
         return factory.fromPointerReaderBlobDefault(
-            this.segment,
-            (this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE)) / Constants.BYTES_PER_WORD,
-            defaultBuffer,
-            defaultOffset,
-            defaultSize);
+                this.segment,
+                (this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE)) / Constants.BYTES_PER_WORD,
+                defaultBuffer,
+                defaultOffset,
+                defaultSize);
     }
 
 }

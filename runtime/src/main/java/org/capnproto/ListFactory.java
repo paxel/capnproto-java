@@ -18,56 +18,58 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
 
 public abstract class ListFactory<Builder, Reader extends ListReader>
-    implements ListBuilder.Factory<Builder>,
-    FromPointerBuilderRefDefault<Builder>,
-    SetPointerBuilder<Builder, Reader>,
-    ListReader.Factory<Reader>,
-    PointerFactory<Builder, Reader>,
-    FromPointerReaderRefDefault<Reader> {
+        implements ListBuilder.Factory<Builder>,
+        FromPointerBuilderRefDefault<Builder>,
+        SetPointerBuilder<Builder, Reader>,
+        ListReader.Factory<Reader>,
+        PointerFactory<Builder, Reader>,
+        FromPointerReaderRefDefault<Reader> {
 
     final byte elementSize;
-    ListFactory(byte elementSize) {this.elementSize = elementSize;}
 
-    @Override
-    public final Reader fromPointerReaderRefDefault(SegmentDataContainer segment, int pointer,
-                                                    SegmentDataContainer defaultSegment, int defaultOffset,
-                                                    int nestingLimit) {
-        return WireHelpers.readListPointer(this,
-                                           segment,
-                                           pointer,
-                                           defaultSegment,
-                                           defaultOffset,
-                                           this.elementSize,
-                                           nestingLimit);
+    ListFactory(byte elementSize) {
+        this.elementSize = elementSize;
     }
 
     @Override
-    public final Reader fromPointerReader(SegmentDataContainer segment, int pointer, int nestingLimit) {
-        return fromPointerReaderRefDefault(segment, pointer, null, 0, nestingLimit);
+    public final Reader fromPointerReaderRefDefault(StructReaderCacheFactory cacheFactory,SegmentDataContainer segment, int pointer,
+            SegmentDataContainer defaultSegment, int defaultOffset,
+            int nestingLimit) {
+        return WireHelpers.readListPointer(this,
+                segment,
+                pointer,
+                defaultSegment,
+                defaultOffset,
+                this.elementSize,
+                nestingLimit);
+    }
+
+    @Override
+    public final Reader fromPointerReader(StructReaderCacheFactory cacheFactory,SegmentDataContainer segment, int pointer, int nestingLimit) {
+        return fromPointerReaderRefDefault(cacheFactory,segment, pointer, null, 0, nestingLimit);
     }
 
     @Override
     public Builder fromPointerBuilderRefDefault(GenericSegmentBuilder segment, int pointer,
-                                                SegmentDataContainer defaultSegment, int defaultOffset) {
+            SegmentDataContainer defaultSegment, int defaultOffset) {
         return WireHelpers.getWritableListPointer(this,
-                                                  pointer,
-                                                  segment,
-                                                  this.elementSize,
-                                                  defaultSegment,
-                                                  defaultOffset);
+                pointer,
+                segment,
+                this.elementSize,
+                defaultSegment,
+                defaultOffset);
     }
 
     @Override
     public Builder fromPointerBuilder(GenericSegmentBuilder segment, int pointer) {
         return WireHelpers.getWritableListPointer(this,
-                                                  pointer,
-                                                  segment,
-                                                  this.elementSize,
-                                                  null, 0);
+                pointer,
+                segment,
+                this.elementSize,
+                null, 0);
     }
 
     @Override

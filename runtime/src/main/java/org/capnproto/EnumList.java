@@ -47,12 +47,12 @@ public class EnumList {
         }
 
         @Override
-        public final Reader<T> constructReader(SegmentDataContainer segment,
+        public final Reader<T> constructReader(StructReaderCacheFactory cacheFactory, SegmentDataContainer segment,
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            return new Reader<>(values,
+            return new Reader<>(cacheFactory, values,
                     segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
         }
 
@@ -69,13 +69,13 @@ public class EnumList {
 
         public final T values[];
 
-        public Reader(T values[],
+        public Reader(StructReaderCacheFactory cacheFactory, T values[],
                 SegmentDataContainer segment,
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            super(cacheFactory, segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
             this.values = values;
         }
 
@@ -204,7 +204,7 @@ public class EnumList {
         }
 
         public final Reader<T> asReader() {
-            return new Reader(this.values,
+            return new Reader(StructReaderCacheFactory.DEFAULT, this.values,
                     this.segment, this.ptr, this.elementCount, this.step,
                     this.structDataSize, this.structPointerCount,
                     java.lang.Integer.MAX_VALUE);

@@ -36,7 +36,7 @@ public final class Data {
         }
 
         @Override
-        public final Reader fromPointerReader(SegmentDataContainer segment, int pointer, int nestingLimit) {
+        public final Reader fromPointerReader(StructReaderCacheFactory cacheFactory,SegmentDataContainer segment, int pointer, int nestingLimit) {
             return WireHelpers.readDataPointer(segment, pointer, null, 0, 0);
         }
 

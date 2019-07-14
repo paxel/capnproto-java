@@ -18,41 +18,45 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
 
 public abstract class StructFactory<Builder, Reader extends StructReader>
-    implements PointerFactory<Builder, Reader>,
-    FromPointerBuilderRefDefault<Builder>,
-    StructBuilder.Factory<Builder>,
-    SetPointerBuilder<Builder, Reader>,
-    FromPointerReaderRefDefault<Reader>,
-    StructReader.Factory<Reader> {
+        implements PointerFactory<Builder, Reader>,
+        FromPointerBuilderRefDefault<Builder>,
+        StructBuilder.Factory<Builder>,
+        SetPointerBuilder<Builder, Reader>,
+        FromPointerReaderRefDefault<Reader>,
+        StructReader.Factory<Reader> {
+
     @Override
-    public final Reader fromPointerReaderRefDefault(SegmentDataContainer segment, int pointer,
-                                                    SegmentDataContainer defaultSegment, int defaultOffset,
-                                                    int nestingLimit) {
-        return WireHelpers.readStructPointer(this,
-                                             segment,
-                                             pointer,
-                                             defaultSegment, defaultOffset,
-                                             nestingLimit);
+    public final Reader fromPointerReaderRefDefault(StructReaderCacheFactory cacheFactory, SegmentDataContainer segment, int pointer,
+            SegmentDataContainer defaultSegment, int defaultOffset,
+            int nestingLimit) {
+        return WireHelpers.readStructPointer(cacheFactory, this,
+                segment,
+                pointer,
+                defaultSegment, defaultOffset,
+                nestingLimit);
     }
+
     @Override
-    public final Reader fromPointerReader(SegmentDataContainer segment, int pointer, int nestingLimit) {
-        return fromPointerReaderRefDefault(segment, pointer, null, 0, nestingLimit);
+    public final Reader fromPointerReader(StructReaderCacheFactory cacheFactory, SegmentDataContainer segment, int pointer, int nestingLimit) {
+        return fromPointerReaderRefDefault(cacheFactory, segment, pointer, null, 0, nestingLimit);
     }
+
     @Override
     public final Builder fromPointerBuilderRefDefault(GenericSegmentBuilder segment, int pointer,
-                                                      SegmentDataContainer defaultSegment, int defaultOffset) {
+            SegmentDataContainer defaultSegment, int defaultOffset) {
         return WireHelpers.getWritableStructPointer(this, pointer, segment, this.structSize(),
-                                                    defaultSegment, defaultOffset);
+                defaultSegment, defaultOffset);
     }
+
     @Override
     public final Builder fromPointerBuilder(GenericSegmentBuilder segment, int pointer) {
         return WireHelpers.getWritableStructPointer(this, pointer, segment, this.structSize(),
-                                                    null, 0);
+                null, 0);
     }
+
     @Override
     public final Builder initFromPointerBuilder(GenericSegmentBuilder segment, int pointer, int elementCount) {
         return WireHelpers.initStructPointer(this, pointer, segment, this.structSize());

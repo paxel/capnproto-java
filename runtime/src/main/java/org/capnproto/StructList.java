@@ -40,12 +40,12 @@ public final class StructList {
         }
 
         @Override
-        public final Reader<ElementReader> constructReader(SegmentDataContainer segment,
+        public final Reader<ElementReader> constructReader(StructReaderCacheFactory cacheFactory, SegmentDataContainer segment,
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            return new Reader<>(factory,
+            return new Reader<>(cacheFactory, factory,
                     segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
         }
 
@@ -84,17 +84,17 @@ public final class StructList {
         }
     }
 
-    public static final class Reader<T> extends ListReader implements Collection<T> {
+    public static final class Reader<T extends StructReader> extends ListReader implements Collection<T> {
 
         public final StructReader.Factory<T> factory;
 
-        public Reader(StructReader.Factory<T> factory,
+        public Reader(StructReaderCacheFactory cacheFactory, StructReader.Factory<T> factory,
                 SegmentDataContainer segment,
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            super(cacheFactory, segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
             this.factory = factory;
         }
 
@@ -105,7 +105,7 @@ public final class StructList {
         }
 
         public T get(int index) {
-            return _getStructElement(factory, index);
+            return _getStructElement(getCacheFactory(), factory, index);
         }
 
         @Override
@@ -174,7 +174,7 @@ public final class StructList {
 
             @Override
             public T next() {
-                return list._getStructElement(factory, idx++);
+                return list._getStructElement(getCacheFactory(), factory, idx++);
             }
 
             @Override
@@ -232,7 +232,7 @@ public final class StructList {
 
         //TODO: rework generics, so that we don't need this factory parameter
         public final <U extends StructReader> Reader<U> asReader(StructFactory<T, U> factory) {
-            return new Reader(factory,
+            return new Reader(StructReaderCacheFactory.DEFAULT, factory,
                     this.segment, this.ptr, this.elementCount, this.step,
                     this.structDataSize, this.structPointerCount,
                     java.lang.Integer.MAX_VALUE);

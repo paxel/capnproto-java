@@ -40,12 +40,12 @@ public final class ListList {
         }
 
         @Override
-        public final Reader<ElementReader> constructReader(SegmentDataContainer segment,
+        public final Reader<ElementReader> constructReader(StructReaderCacheFactory cacheFactory, SegmentDataContainer segment,
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            return new Reader<>(factory, segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            return new Reader<>(cacheFactory, factory, segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
         }
 
         @Override
@@ -59,20 +59,23 @@ public final class ListList {
 
     public static final class Reader<T> extends ListReader implements Collection<T> {
 
+        private final StructReaderCacheFactory cacheFactory;
+
         private final FromPointerReader<T> factory;
 
-        public Reader(FromPointerReader<T> factory,
+        public Reader(StructReaderCacheFactory cacheFactory, FromPointerReader<T> factory,
                 SegmentDataContainer segment,
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            super(cacheFactory, segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            this.cacheFactory = cacheFactory;
             this.factory = factory;
         }
 
         public T get(int index) {
-            return _getPointerElement(this.factory, index);
+            return _getPointerElement(cacheFactory, this.factory, index);
         }
 
         @Override
@@ -194,8 +197,8 @@ public final class ListList {
         }
 
         // TODO: rework generics so that we don't need this factory parameter
-        public final <U extends ListReader> Reader<U> asReader(ListFactory<T, U> factor) {
-            return new Reader(factor,
+        public final <U extends ListReader> Reader<U> asReader(ListFactory<T, U> factory) {
+            return new Reader(StructReaderCacheFactory.DEFAULT, factory,
                     this.segment, this.ptr, this.elementCount, this.step,
                     this.structDataSize, this.structPointerCount,
                     java.lang.Integer.MAX_VALUE);

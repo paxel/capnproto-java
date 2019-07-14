@@ -18,9 +18,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
 
 public interface FromPointerReaderRefDefault<T> {
-    T fromPointerReaderRefDefault(SegmentDataContainer segment, int pointer, SegmentDataContainer defaultSegment, int defaultOffset, int nestingLimit);
+
+    T fromPointerReaderRefDefault(StructReaderCacheFactory cacheFactory, SegmentDataContainer segment, int pointer, SegmentDataContainer defaultSegment, int defaultOffset, int nestingLimit);
 }

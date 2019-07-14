@@ -36,12 +36,12 @@ public final class DataList {
         }
 
         @Override
-        public final Reader constructReader(SegmentDataContainer segment,
+        public final Reader constructReader(StructReaderCacheFactory cacheFactory, SegmentDataContainer segment,
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            return new Reader(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            return new Reader(cacheFactory, segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
         }
 
         @Override
@@ -56,12 +56,12 @@ public final class DataList {
 
     public static final class Reader extends ListReader implements Collection<Data.Reader> {
 
-        public Reader(SegmentDataContainer segment,
+        public Reader(StructReaderCacheFactory cacheFactory, SegmentDataContainer segment,
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            super(cacheFactory, segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
         }
 
         public Stream<Data.Reader> stream() {
@@ -71,12 +71,12 @@ public final class DataList {
         }
 
         public Data.Reader get(int index) {
-            return _getPointerElement(Data.factory, index);
+            return _getPointerElement(getCacheFactory(), Data.factory, index);
         }
 
         @Override
         public boolean isEmpty() {
-            return elementCount==0;
+            return elementCount == 0;
         }
 
         @Override
@@ -129,7 +129,6 @@ public final class DataList {
             throw new UnsupportedOperationException("Unsupported");
         }
 
-
         public final class Iterator implements java.util.Iterator<Data.Reader> {
 
             public Reader list;
@@ -141,7 +140,7 @@ public final class DataList {
 
             @Override
             public Data.Reader next() {
-                return this.list._getPointerElement(Data.factory, idx++);
+                return this.list._getPointerElement(getCacheFactory(), Data.factory, idx++);
             }
 
             @Override
@@ -184,7 +183,7 @@ public final class DataList {
         }
 
         public final Reader asReader() {
-            return new Reader(this.segment, this.ptr, this.elementCount, this.step,
+            return new Reader(StructReaderCacheFactory.DEFAULT, this.segment, this.ptr, this.elementCount, this.step,
                     this.structDataSize, this.structPointerCount,
                     java.lang.Integer.MAX_VALUE);
         }
@@ -218,9 +217,10 @@ public final class DataList {
         public java.util.Iterator<Data.Builder> iterator() {
             return new Iterator(this);
         }
+
         @Override
         public boolean isEmpty() {
-            return elementCount==0;
+            return elementCount == 0;
         }
 
         @Override
@@ -272,8 +272,6 @@ public final class DataList {
         public void clear() {
             throw new UnsupportedOperationException("Unsupported");
         }
-
-
 
         @Override
         public String toString() {

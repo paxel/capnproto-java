@@ -24,15 +24,9 @@ import java.util.function.Consumer;
 
 public class StructReader {
 
-    @FunctionalInterface
-    public interface ReaderFactory<T> {
+    public interface Factory<T extends StructReader> {
 
-        T constructReader(SegmentDataContainer segment, int data, int pointers, int dataSize, short pointerCount, int nestingLimit);
-    }
-
-    public interface Factory<T> {
-
-        T constructReader(SegmentDataContainer segment, int data, int pointers, int dataSize, short pointerCount, int nestingLimit);
+        T constructReader(StructReaderCacheFactory factory, SegmentDataContainer segment, int data, int pointers, int dataSize, short pointerCount, int nestingLimit);
     }
 
     private static final Runnable VALIDATOR_INIT = () -> {
@@ -48,6 +42,17 @@ public class StructReader {
     protected short pointerCount;
     protected int nestingLimit;
     protected Runnable validator = VALIDATOR_DEINIT;
+    private StructReaderCacheFactory cacheFactory;
+
+    public <T extends StructReader> StructReaderCache<T> getOrCreateCache(Class<T> t) {
+        validator.run();
+        return cacheFactory.getOrCreateCache(t);
+    }
+
+    public <C> StructReaderCacheFactory getOrCreateFactory(Class<C> t) {
+        validator.run();
+        return cacheFactory.getOrCreateFactory(t);
+    }
     private Consumer<StructReader> recycleAction = f -> {
     };
 
@@ -55,17 +60,18 @@ public class StructReader {
         deinit();
     }
 
-    public StructReader(SegmentDataContainer segment, int data, int pointers, int dataSize, short pointerCount, int nestingLimit) {
-        _init(segment, data, pointers, dataSize, pointerCount, nestingLimit);
+    public StructReader(StructReaderCacheFactory cacheFactory, SegmentDataContainer segment, int data, int pointers, int dataSize, short pointerCount, int nestingLimit) {
+        _init(cacheFactory, segment, data, pointers, dataSize, pointerCount, nestingLimit);
     }
 
-    protected final StructReader _init(SegmentDataContainer segment, int data, int pointers, int dataSize, short pointerCount, int nestingLimit) {
+    protected final StructReader _init(StructReaderCacheFactory cacheFactory, SegmentDataContainer segment, int data, int pointers, int dataSize, short pointerCount, int nestingLimit) {
         this.segment = segment;
         this.data = data;
         this.pointers = pointers;
         this.dataSize = dataSize;
         this.pointerCount = pointerCount;
         this.nestingLimit = nestingLimit;
+        this.cacheFactory = cacheFactory;
         validator = VALIDATOR_INIT;
         return this;
     }
@@ -77,6 +83,7 @@ public class StructReader {
         this.dataSize = 0;
         this.pointerCount = 0;
         this.nestingLimit = 0x7fff_ffff;
+        this.cacheFactory = null;
         validator = VALIDATOR_DEINIT;
     }
 
@@ -197,7 +204,7 @@ public class StructReader {
     protected final <T> T _getPointerField(FromPointerReader<T> factory, int ptrIndex) {
         validator.run();
         if (ptrIndex < this.pointerCount) {
-            return factory.fromPointerReader(this.segment,
+            return factory.fromPointerReader(getOrCreateFactory(factory.getClass()), this.segment,
                     this.pointers + ptrIndex,
                     this.nestingLimit);
         } else {
