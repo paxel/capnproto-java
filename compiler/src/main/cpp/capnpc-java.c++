@@ -1546,12 +1546,11 @@ private:
       kj::strTree(
         spaces(indent), "public static class ", name, " {\n",
         kj::strTree(
-          spaces(indent), "  public static final org.capnproto.StructSize STRUCT_SIZE =",
-          " new org.capnproto.StructSize((short)", structNode.getDataWordCount(),
+          spaces(indent), "  public static final org.capnproto.StructSize STRUCT_SIZE = new org.capnproto.StructSize((short)", structNode.getDataWordCount(),
           ",(short)", structNode.getPointerCount(), ");\n"),
               // add cache if not generic
               ((factoryTypeParams.size()==0)?kj::strTree(
-        spaces(indent), "  public static final org.capnproto.StructReaderCache<",name,".Reader> cache = new org.capnproto.StructReaderCache<>(",name,".Reader::new);\n"
+        spaces(indent), "  public static final org.capnproto.ThreadLocalStructReaderCache cache = new org.capnproto.ThreadLocalStructReaderCache();\n"
               ).flatten():kj::str("")),
 
         spaces(indent), "  public static final class Factory", factoryTypeParams,
@@ -1570,7 +1569,7 @@ private:
         "int pointers, int dataSize, short pointerCount, int nestingLimit) {\n",
                 ((factoryTypeParams.size()==0)?
                     // use cache
-        kj::strTree(spaces(indent), "      ",name,".Reader result = cache.getOrCreate(); result.init(segment,data,pointers,dataSize,pointerCount,nestingLimit); return result;\n").flatten():
+        kj::strTree(spaces(indent), "      return cache.getCache(",name,".Reader.class).getOrCreate().init(segment,data,pointers,dataSize,pointerCount,nestingLimit);\n").flatten():
                     // always create new object
                     kj::strTree(spaces(indent), "      return new Reader",readerTypeParams, "(",
         KJ_MAP(p, typeParamVec) {
