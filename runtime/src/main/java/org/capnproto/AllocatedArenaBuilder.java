@@ -85,6 +85,53 @@ public class AllocatedArenaBuilder {
         return arenaFactory.apply(bb);
     }
 
+    /**
+     * Reads the frame data of one Capnp message into a byteBuffer.
+     *
+     * @param input the input data.
+     * @return a ByteBuffer containing a complete Frame or null if EOF
+     * @throws IOException if reading was impossible or input data invalid.
+     */
+    public ByteBuffer readFrame(ReadableByteChannel bc) throws IOException {
+        firstWord.rewind();
+        int read = fillBuffer(bc, firstWord);
+        if (read == 0) {
+            // EOF at the beginning
+            return null;
+        } else if (read < Constants.BYTES_PER_WORD) {
+            throw new IOException("Incomplete data: EOF after " + read);
+        }
+        final int segmentCount = 1 + firstWord.getInt(0);
+        final int segment0Size = firstWord.getInt(4);
+
+        int totalWords = segment0Size;
+        segmentCountValidator.validate(segmentCount);
+        // in words
+        segmentSizeHeader.rewind();
+        final int segmentSizeHeaderSize = 4 * (segmentCount & ~1);
+        segmentSizeHeader.limit(segmentSizeHeaderSize);
+        read = fillBuffer(bc, segmentSizeHeader);
+        if (read < segmentSizeHeaderSize) {
+            throw new IOException("Incomplete data: EOF after " + read + Constants.BYTES_PER_WORD);
+        }
+        for (int segmentHeaderIndex = 0; segmentHeaderIndex < segmentCount - 1; ++segmentHeaderIndex) {
+            totalWords += segmentSizeHeader.getInt(segmentHeaderIndex * 4);
+        }
+
+        ByteBuffer frame = byteBufferFactory.apply(totalWords * Constants.BYTES_PER_WORD + segmentSizeHeaderSize + Constants.BYTES_PER_WORD);
+        // write first word
+        frame.put(firstWord);
+        // write additional sizes
+        frame.put(segmentSizeHeader);
+        // read remaining stuff or fail
+        read = fillBuffer(bc, frame);
+        if (read < totalWords * Constants.BYTES_PER_WORD) {
+            throw new IOException("Incomplete data: EOF after " + read + segmentSizeHeaderSize + Constants.BYTES_PER_WORD);
+        }
+        frame.rewind();
+        return frame;
+    }
+
     private ByteBuffer[] createInternalByteBuffers(ReadableByteChannel bc) throws IOException {
         firstWord.rewind();
         int read = fillBuffer(bc, firstWord);
@@ -116,7 +163,7 @@ public class AllocatedArenaBuilder {
 
         ByteBuffer allSegments = byteBufferFactory.apply(totalWords * Constants.BYTES_PER_WORD);
         read = fillBuffer(bc, allSegments);
-        if (read < segmentSizeHeaderSize) {
+        if (read < totalWords * Constants.BYTES_PER_WORD) {
             throw new IOException("Incomplete data: EOF after " + read + segmentSizeHeaderSize + Constants.BYTES_PER_WORD);
         }
         ByteBuffer[] segmentSlices = new ByteBuffer[segmentCount];
