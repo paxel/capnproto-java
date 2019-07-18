@@ -23,6 +23,8 @@ package org.capnproto.benchmark;
 import org.capnproto.StructList;
 import org.capnproto.Text;
 import org.capnproto.benchmark.CatRankSchema.*;
+import org.capnproto.benchmark.CatRankSchema.SearchResult;
+import org.capnproto.benchmark.CatRankSchema.SearchResultList;
 
 public class CatRank
         extends TestCase<SearchResultList.Factory, SearchResultList.Builder, SearchResultList.Reader, SearchResultList.Factory, SearchResultList.Builder, SearchResultList.Reader, Integer> {
@@ -138,7 +140,7 @@ public class CatRank
 
     public static void main(String[] args) {
         CatRank testCase = new CatRank();
-        testCase.execute(args, SearchResultList.factory, SearchResultList.factory);
+        testCase.execute(args, SearchResultList.FACTORY.get(), SearchResultList.FACTORY.get());
     }
 
 }

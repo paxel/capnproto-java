@@ -21,6 +21,9 @@
 package org.capnproto.benchmark;
 
 import org.capnproto.benchmark.EvalSchema.*;
+import org.capnproto.benchmark.EvalSchema.EvaluationResult;
+import org.capnproto.benchmark.EvalSchema.Expression;
+import org.capnproto.benchmark.EvalSchema.Operation;
 
 public class Eval
         extends TestCase<Expression.Factory, Expression.Builder, Expression.Reader, EvaluationResult.Factory, EvaluationResult.Builder, EvaluationResult.Reader, Integer> {
@@ -113,6 +116,6 @@ public class Eval
 
     public static void main(String[] args) {
         Eval testCase = new Eval();
-        testCase.execute(args, Expression.factory, EvaluationResult.factory);
+        testCase.execute(args, Expression.FACTORY.get(), EvaluationResult.FACTORY.get());
     }
 }

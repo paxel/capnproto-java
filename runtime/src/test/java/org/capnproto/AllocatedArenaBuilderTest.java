@@ -93,7 +93,7 @@ public class AllocatedArenaBuilderTest {
             0, 0, 0, 0
         }));
 
-        read.getRoot(org.capnproto.test.Test.TestAllTypes.factory);
+        read.getRoot(org.capnproto.test.Test.TestAllTypes.FACTORY.get());
 
     }
 

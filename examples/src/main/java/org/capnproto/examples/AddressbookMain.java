@@ -20,10 +20,9 @@
 // THE SOFTWARE.
 package org.capnproto.examples;
 
-import java.io.FileOutputStream;
-import java.io.FileInputStream;
 import java.io.FileDescriptor;
-
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import org.capnproto.StructList;
 import org.capnproto.examples.Addressbook.AddressBook;
 import org.capnproto.examples.Addressbook.Person;
@@ -32,7 +31,7 @@ public class AddressbookMain {
 
     public static void writeAddressBook() throws java.io.IOException {
         org.capnproto.MessageBuilder message = new org.capnproto.MessageBuilder();
-        AddressBook.Builder addressbook = message.initRoot(AddressBook.factory);
+        AddressBook.Builder addressbook = message.initRoot(AddressBook.FACTORY.get());
         StructList.Builder<Person.Builder> people = addressbook.initPeople(2);
 
         final Person.Builder alice = people.get(0).setId(123).setName("Alice").setEmail("alice@example.com");
@@ -54,7 +53,7 @@ public class AddressbookMain {
                 (new FileInputStream(FileDescriptor.in)).getChannel()
         );
 
-        AddressBook.Reader addressbook = message.getRoot(AddressBook.factory);
+        AddressBook.Reader addressbook = message.getRoot(AddressBook.FACTORY.get());
 
         addressbook.getPeople().stream().forEach((Person.Reader person) -> {
             System.out.println(person.getName() + ": " + person.getEmail());

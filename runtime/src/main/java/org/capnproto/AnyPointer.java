@@ -18,19 +18,22 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
 
 public final class AnyPointer {
+
     public static final class Factory implements PointerFactory<Builder, Reader> {
+
         @Override
         public final Reader fromPointerReader(SegmentDataContainer segment, int pointer, int nestingLimit) {
             return new Reader(segment, pointer, nestingLimit);
         }
+
         @Override
         public final Builder fromPointerBuilder(GenericSegmentBuilder segment, int pointer) {
             return new Builder(segment, pointer);
         }
+
         @Override
         public final Builder initFromPointerBuilder(GenericSegmentBuilder segment, int pointer, int elementCount) {
             Builder result = new Builder(segment, pointer);
@@ -38,9 +41,15 @@ public final class AnyPointer {
             return result;
         }
     }
-    public static final Factory factory = new Factory();
+    public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>() {
+        @Override
+        protected Factory initialValue() {
+            return new Factory();
+        }
+    };
 
     public final static class Reader {
+
         final SegmentDataContainer segment;
         final int pointer; // offset in words
         final int nestingLimit;
@@ -61,6 +70,7 @@ public final class AnyPointer {
     }
 
     public static final class Builder {
+
         final GenericSegmentBuilder segment;
         final int pointer;
 

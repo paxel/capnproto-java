@@ -759,10 +759,10 @@ private:
   kj::String makeFactoryArg(capnp::Type type) {
     switch (type.which()) {
     case schema::Type::TEXT : {
-      return kj::str("org.capnproto.Text.factory");
+      return kj::str("org.capnproto.Text.FACTORY.get()");
     }
     case schema::Type::DATA : {
-      return kj::str("org.capnproto.Data.factory");
+      return kj::str("org.capnproto.Data.FACTORY.get()");
     }
     case schema::Type::ANY_POINTER : {
       KJ_IF_MAYBE(brandParam, type.getBrandParameter()) {
@@ -771,7 +771,7 @@ private:
                   "_", kj::hex(brandParam->scopeId), "_Factory");
 
       } else {
-        return kj::str("org.capnproto.AnyPointer.factory");
+        return kj::str("org.capnproto.AnyPointer.FACTORY.get()");
       }
     }
     case schema::Type::STRUCT : {
@@ -788,7 +788,7 @@ private:
           ")"
           ).flatten();
       } else {
-        return kj::str(typeName(type, kj::str("factory")));
+        return kj::str(typeName(type, kj::str("FACTORY.get()")));
       }
     }
     case schema::Type::LIST: {
@@ -812,7 +812,7 @@ private:
             "))"
             ).flatten();
         } else {
-          return kj::str(typeName(elementType, kj::str("listFactory")));
+          return kj::str(typeName(elementType, kj::str("LIST_FACTORY.get()")));
         }
       }
       case schema::Type::LIST:
@@ -827,7 +827,7 @@ private:
                        typeName(elementType, kj::str("")),
                        ".values())");
       default:
-        return kj::str(typeName(type, kj::str("factory")));
+        return kj::str(typeName(type, kj::str("FACTORY.get()")));
       }
     }
     default:
@@ -1265,7 +1265,7 @@ private:
 
       kj::String blobKind =  typeBody.which() == schema::Type::TEXT ? kj::str("Text") : kj::str("Data");
       kj::String setterInputType = typeBody.which() == schema::Type::TEXT ? kj::str("String") : kj::str("byte []");
-      kj::String factory = kj::str("org.capnproto.", kj::str(blobKind), ".factory");
+      kj::String factory = kj::str("org.capnproto.", kj::str(blobKind), ".FACTORY.get()");
 
          hasExists=true;
       return FieldText {
@@ -1549,23 +1549,23 @@ private:
           spaces(indent), "  public static final org.capnproto.StructSize STRUCT_SIZE = new org.capnproto.StructSize((short)", structNode.getDataWordCount(),
           ",(short)", structNode.getPointerCount(), ");\n"),
 
-        spaces(indent), "  public static final class Factory", factoryTypeParams,
+        spaces(indent), "  public static final class  Factory", factoryTypeParams,
         " extends org.capnproto.StructFactory<Builder", builderTypeParams, ", Reader", readerTypeParams, "> {\n",
         factoryMembers.flatten(),
-              // add cache if not generic
-              ((factoryTypeParams.size()==0)?kj::strTree(
-        spaces(indent), "  public static final org.capnproto.StructReaderCache<",name,".Reader> cache = new org.capnproto.StructReaderCache(",name,".Reader::new);\n"
-              ).flatten():kj::str("")),
+              
         spaces(indent), "    public Factory(",
         factoryArgs.flatten(),
         ") {\n",
         KJ_MAP(p, typeParamVec) {
           return kj::strTree(spaces(indent), "      this.", p, "_Factory = ", p, "_Factory;\n");
         },
-        spaces(indent), "    }\n",
-
-        spaces(indent),
-        "    public final Reader", readerTypeParams, " constructReader(org.capnproto.SegmentDataContainer segment, int data,",
+        spaces(indent), "    }\n\n",
+        // add cache if not generic
+        ((factoryTypeParams.size()==0)
+          ? kj::strTree(spaces(indent), "  public static final org.capnproto.StructReaderCache<",name,".Reader> cache = new org.capnproto.StructReaderCache<",name,".Reader>(",name,".Reader::new);\n\n").flatten()
+          : kj::str("")
+        ),
+        spaces(indent),        "    public final Reader", readerTypeParams, " constructReader(org.capnproto.SegmentDataContainer segment, int data,",
         "int pointers, int dataSize, short pointerCount, int nestingLimit) {\n",
                 ((factoryTypeParams.size()==0)?
                     // use cache
@@ -1607,9 +1607,19 @@ private:
            spaces(indent), "  }\n"
            ) :
          kj::strTree(
-           spaces(indent), "  public static final Factory factory = new Factory();\n",
-           spaces(indent), "  public static final org.capnproto.StructList.Factory<Builder,Reader> listFactory =\n",
-           spaces(indent), "    new org.capnproto.StructList.Factory<Builder, Reader>(factory);\n")),
+           spaces(indent), "  public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>(){\n",
+           spaces(indent), "     @Override\n",
+           spaces(indent), "     protected Factory initialValue() {\n",
+           spaces(indent), "         return new Factory();\n",
+           spaces(indent), "     }\n",
+           spaces(indent), "  };\n",
+           spaces(indent), "  public static final ThreadLocal<org.capnproto.StructList.Factory<Builder,Reader>> LIST_FACTORY = new ThreadLocal<org.capnproto.StructList.Factory<Builder,Reader>>(){\n",
+           spaces(indent), "     @Override\n",
+           spaces(indent), "     protected org.capnproto.StructList.Factory<Builder,Reader> initialValue() {\n",
+           spaces(indent), "         return new org.capnproto.StructList.Factory<>(FACTORY.get());\n",
+           spaces(indent), "     }\n",
+           spaces(indent), "  };\n"
+             )),
 
         kj::strTree(
           spaces(indent+1), "public static final class Builder", builderTypeParams, " extends org.capnproto.StructBuilder ",builderInterface," {\n",

@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 import org.capnproto.AllocatedArenaBuilder;
 import org.capnproto.ArrayInputStream;
 import org.capnproto.MessageBuilder;
-import org.capnproto.ReaderOptions;
 import org.capnproto.benchmark.CarSalesSchema;
 import org.capnproto.benchmark.DataSchema;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -76,19 +75,19 @@ public class ReadObjectsJmh {
         public void init() throws IOException {
             {
                 MessageBuilder builder = new MessageBuilder();
-                final CarSalesSchema.Car.Builder car = builder.initRoot(CarSalesSchema.Car.factory);
+                final CarSalesSchema.Car.Builder car = builder.initRoot(CarSalesSchema.Car.FACTORY.get());
                 createCar(car);
                 this.car = write(builder);
             }
             {
                 MessageBuilder builder = new MessageBuilder();
-                final DataSchema.Message.Builder initRoot = builder.initRoot(DataSchema.Message.factory);
+                final DataSchema.Message.Builder initRoot = builder.initRoot(DataSchema.Message.FACTORY.get());
                 initRoot.initLeft().setValue(new byte[100_000]);
                 this.data = write(builder);
             }
             {
                 MessageBuilder builder = new MessageBuilder();
-                final CarSalesSchema.ParkingLot.Builder parkingLot = builder.initRoot(CarSalesSchema.ParkingLot.factory);
+                final CarSalesSchema.ParkingLot.Builder parkingLot = builder.initRoot(CarSalesSchema.ParkingLot.FACTORY.get());
                 parkingLot.initCars(1000);
                 parkingLot.getCars().stream().forEach(this::createCar);
                 this.lot = write(builder);

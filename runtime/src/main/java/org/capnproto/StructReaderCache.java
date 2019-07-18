@@ -39,10 +39,12 @@ public class StructReaderCache<T extends StructReader> {
     }
 
     private void activateRecycler(final T reader) {
-        reader.onRecycle(f -> {
-            // first deinit, then put to queue, to avoid racing conditions
-            f.deinit();
-            recycler.offer((T) f);
-        });
+        reader.onRecycle(this::recycle);
+    }
+
+    private <U extends StructReader> void recycle(U reader) {
+        // first deinit, then put to queue, to avoid racing conditions
+        reader.deinit();
+        recycler.offer((T) reader);
     }
 }

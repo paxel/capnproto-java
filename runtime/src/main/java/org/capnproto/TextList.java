@@ -52,7 +52,12 @@ public final class TextList {
             return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
         }
     }
-    public static final Factory factory = new Factory();
+    public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>() {
+        @Override
+        protected Factory initialValue() {
+            return new Factory();
+        }
+    };
 
     public static final class Reader extends ListReader implements Collection<String> {
 
@@ -65,7 +70,7 @@ public final class TextList {
         }
 
         public Text.Reader get(int index) {
-            return _getPointerElement(Text.factory, index);
+            return _getPointerElement(Text.FACTORY.get(), index);
         }
 
         @Override
@@ -126,7 +131,7 @@ public final class TextList {
         @Override
         public Stream<String> stream() {
             return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
-                    Spliterator.SIZED & Spliterator.IMMUTABLE            ), false);
+                    Spliterator.SIZED & Spliterator.IMMUTABLE), false);
         }
 
         @Override
@@ -145,7 +150,7 @@ public final class TextList {
 
             @Override
             public String next() {
-                return this.list._getPointerElement(Text.factory, idx++).toString();
+                return this.list._getPointerElement(Text.FACTORY.get(), idx++).toString();
             }
 
             @Override
@@ -175,11 +180,11 @@ public final class TextList {
         }
 
         public final Text.Builder get(int index) {
-            return _getPointerElement(Text.factory, index);
+            return _getPointerElement(Text.FACTORY.get(), index);
         }
 
         public final void set(int index, Text.Reader value) {
-            _setPointerElement(Text.factory, index, value);
+            _setPointerElement(Text.FACTORY.get(), index, value);
         }
 
         public final Reader asReader() {
@@ -199,7 +204,7 @@ public final class TextList {
 
             @Override
             public String next() {
-                return this.list._getPointerElement(Text.factory, idx++).toString();
+                return this.list._getPointerElement(Text.FACTORY.get(), idx++).toString();
             }
 
             @Override

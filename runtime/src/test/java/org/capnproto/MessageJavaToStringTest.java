@@ -33,19 +33,19 @@ public class MessageJavaToStringTest {
     }
 
     private void withDataMessage() {
-        this.message = new MessageBuilder().initRoot(MessageJava.Message.factory);
+        this.message = new MessageBuilder().initRoot(MessageJava.Message.FACTORY.get());
         message.initData(100);
         message.setTime(1030L);
     }
 
     private void withEnumMessage() {
-        this.message = new MessageBuilder().initRoot(MessageJava.Message.factory);
+        this.message = new MessageBuilder().initRoot(MessageJava.Message.FACTORY.get());
         message.setTime(-1030L);
         message.setFlag(MessageJava.Flag.FILE_NOT_FOUND);
     }
 
     private void withMessages() {
-        this.message = new MessageBuilder().initRoot(MessageJava.Message.factory);
+        this.message = new MessageBuilder().initRoot(MessageJava.Message.FACTORY.get());
         message.setTime(-1030L);
         final StructList.Builder<MessageJava.Message.Builder> msgs = message.initMessages(2);
         msgs.get(0).initMetaData().setName("Andrew");

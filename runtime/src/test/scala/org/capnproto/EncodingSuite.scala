@@ -28,7 +28,7 @@ import org.scalatest.Matchers._
 class EncodingSuite extends FunSuite {
   test("AllTypes") {
     val message = new MessageBuilder()
-    val allTypes = message.initRoot(TestAllTypes.factory)
+    val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
     TestUtil.initTestMessage(allTypes)
     TestUtil.checkTestMessage(allTypes)
     TestUtil.checkTestMessage(allTypes.asReader())
@@ -36,7 +36,7 @@ class EncodingSuite extends FunSuite {
 
   test("AllTypesMultiSegment") {
     val message = new MessageBuilder(5, BuilderArena.AllocationStrategy.FIXED_SIZE)
-    val allTypes = message.initRoot(TestAllTypes.factory)
+    val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
     TestUtil.initTestMessage(allTypes)
 
     TestUtil.checkTestMessage(allTypes)
@@ -45,11 +45,11 @@ class EncodingSuite extends FunSuite {
 
   test("Setters") {
     val message = new MessageBuilder()
-    val allTypes = message.initRoot(TestAllTypes.factory)
+    val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
     TestUtil.initTestMessage(allTypes)
 
     val message2 = new MessageBuilder()
-    val allTypes2 = message2.initRoot(TestAllTypes.factory)
+    val allTypes2 = message2.initRoot(TestAllTypes.FACTORY.get())
 
     allTypes2.setStructField(allTypes.asReader())
     TestUtil.checkTestMessage(allTypes2.getStructField())
@@ -59,7 +59,7 @@ class EncodingSuite extends FunSuite {
 
   test("Zeroing") {
     val message = new MessageBuilder()
-    val allTypes = message.initRoot(TestAllTypes.factory)
+    val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
 
     val structList = allTypes.initStructList(3)
     TestUtil.initTestMessage(structList.get(0))
@@ -76,7 +76,7 @@ class EncodingSuite extends FunSuite {
     val allTypesReader = allTypes.asReader()
     TestUtil.checkTestMessage(allTypesReader.getStructField())
 
-    val any = message.initRoot(AnyPointer.factory)
+    val any = message.initRoot(AnyPointer.FACTORY.get())
     val segments = message.getArena().getSegmentsForOutput()
     for (segment <- segments) {
       for (jj <- 0 to segment.limit - 1) {
@@ -92,7 +92,7 @@ class EncodingSuite extends FunSuite {
 
     val input = new ArrayInputStream (java.nio.ByteBuffer.wrap(bytes))
     val message = org.capnproto.Serialize.read(input)
-    val root = message.getRoot(TestAllTypes.factory)
+    val root = message.getRoot(TestAllTypes.FACTORY.get())
     root.getBoolField() should equal (true)
     root.getInt8Field() should equal (7)
     root.getInt16Field() should equal (32767)
@@ -100,10 +100,10 @@ class EncodingSuite extends FunSuite {
 
   test("UpgradeStruct") {
     val builder = new MessageBuilder()
-    val root = builder.initRoot(TestAnyPointer.factory)
+    val root = builder.initRoot(TestAnyPointer.FACTORY.get())
 
     {
-      val oldVersion = root.getAnyPointerField().initAs(TestOldVersion.factory)
+      val oldVersion = root.getAnyPointerField().initAs(TestOldVersion.FACTORY.get())
       oldVersion.setOld1(123)
       oldVersion.setOld2("foo")
       val sub = oldVersion.initOld3()
@@ -112,7 +112,7 @@ class EncodingSuite extends FunSuite {
     }
 
     {
-      val newVersion = root.getAnyPointerField().asReader().getAs(TestNewVersion.factory)
+      val newVersion = root.getAnyPointerField().asReader().getAs(TestNewVersion.FACTORY.get())
       newVersion.getOld1() should equal (123)
       newVersion.getOld2().toString() should equal ("foo")
       newVersion.getNew2().toString() should equal ("baz")
@@ -123,10 +123,10 @@ class EncodingSuite extends FunSuite {
 
   test("UpgradeStructInBuilder") {
     val builder = new MessageBuilder()
-    val root = builder.initRoot(TestAnyPointer.factory)
+    val root = builder.initRoot(TestAnyPointer.FACTORY.get())
 
     {
-      val oldVersion = root.getAnyPointerField().initAs(TestOldVersion.factory)
+      val oldVersion = root.getAnyPointerField().initAs(TestOldVersion.FACTORY.get())
       oldVersion.setOld1(123)
       oldVersion.setOld2("foo")
       val sub = oldVersion.initOld3()
@@ -135,7 +135,7 @@ class EncodingSuite extends FunSuite {
     }
 
     {
-      val newVersion = root.getAnyPointerField().getAs(TestNewVersion.factory)
+      val newVersion = root.getAnyPointerField().getAs(TestNewVersion.FACTORY.get())
       newVersion.getOld1() should equal (123)
       newVersion.getOld2().toString() should equal ("foo")
       newVersion.getNew1() should equal (987)
@@ -152,7 +152,7 @@ class EncodingSuite extends FunSuite {
     }
 
     {
-      val oldVersion = root.getAnyPointerField().getAs(TestOldVersion.factory)
+      val oldVersion = root.getAnyPointerField().getAs(TestOldVersion.FACTORY.get())
       oldVersion.getOld1() should equal (234)
       oldVersion.getOld2.toString() should equal ("qux")
     }
@@ -160,25 +160,25 @@ class EncodingSuite extends FunSuite {
 
   test("StructListUpgrade") {
     val message = new MessageBuilder()
-    val root = message.initRoot(TestAnyPointer.factory)
+    val root = message.initRoot(TestAnyPointer.FACTORY.get())
     val any = root.getAnyPointerField()
 
     {
-      val longs = any.initAs(PrimitiveList.Long.factory, 3)
+      val longs = any.initAs(PrimitiveList.Long.FACTORY.get(), 3)
       longs.set(0, 123)
       longs.set(1, 456)
       longs.set(2, 789)
     }
 
     {
-      val olds = any.asReader().getAs(TestOldVersion.listFactory)
+      val olds = any.asReader().getAs(TestOldVersion.LIST_FACTORY.get())
       olds.get(0).getOld1() should equal (123)
       olds.get(1).getOld1() should equal (456)
       olds.get(2).getOld1() should equal (789)
     }
 
     {
-      val olds = any.getAs(TestOldVersion.listFactory)
+      val olds = any.getAs(TestOldVersion.LIST_FACTORY.get())
       olds.size() should equal (3)
       olds.get(0).getOld1() should equal (123)
       olds.get(1).getOld1() should equal (456)
@@ -190,7 +190,7 @@ class EncodingSuite extends FunSuite {
     }
 
     {
-      val news = any.getAs(TestNewVersion.listFactory)
+      val news = any.getAs(TestNewVersion.LIST_FACTORY.get())
       news.size() should equal (3)
       news.get(0).getOld1() should equal (123)
       news.get(0).getOld2().toString() should equal ("zero")
@@ -216,7 +216,7 @@ class EncodingSuite extends FunSuite {
     segment.order(java.nio.ByteOrder.LITTLE_ENDIAN)
     val messageReader = new MessageReader(Array(segment), ReaderOptions.DEFAULT_READER_OPTIONS)
 
-    val oldFactory = new StructList.Factory(TestOldVersion.factory)
+    val oldFactory = new StructList.Factory(TestOldVersion.FACTORY.get())
     val oldVersion = messageReader.getRoot(oldFactory)
 
     oldVersion.size() should equal (1)
@@ -232,7 +232,7 @@ class EncodingSuite extends FunSuite {
     segments.length should equal (1)
     segments(0).limit() should equal (6 * 8)
 
-    val newVersion = message.getRoot(new StructList.Factory(TestNewVersion.factory))
+    val newVersion = message.getRoot(new StructList.Factory(TestNewVersion.FACTORY.get()))
     newVersion.size() should equal (1)
     newVersion.get(0).getOld1() should equal (91)
     newVersion.get(0).getOld2().toString() should equal ("hello!!")
@@ -247,7 +247,7 @@ class EncodingSuite extends FunSuite {
 
   test("ListBuilderAsReader") {
     val message = new MessageBuilder()
-    val allTypes = message.initRoot(TestAllTypes.factory)
+    val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
 
     allTypes.initVoidList(10)
     allTypes.getVoidList().asReader().size() should equal (10)
@@ -295,7 +295,7 @@ class EncodingSuite extends FunSuite {
     val structList = allTypes.initStructList(2)
     structList.get(0).setInt8Field(5)
     structList.get(1).setInt8Field(9)
-    val structListReader = structList.asReader(TestAllTypes.factory)
+    val structListReader = structList.asReader(TestAllTypes.FACTORY.get())
     structListReader.size() should equal (2)
     structListReader.get(0).getInt8Field() should equal (5)
     structListReader.get(1).getInt8Field() should equal (9)
@@ -313,7 +313,7 @@ class EncodingSuite extends FunSuite {
 
   test("NestedListBuilderAsReader") {
     val builder = new MessageBuilder()
-    val root = builder.initRoot(TestLists.factory)
+    val root = builder.initRoot(TestLists.FACTORY.get())
 
     val structListList = root.initStructListList(3)
     val structList0 = structListList.init(0, 1)
@@ -324,7 +324,7 @@ class EncodingSuite extends FunSuite {
     structList2.get(1).setInt16Field(333)
     structList2.get(2).setInt16Field(4444)
 
-    val structListListReader = structListList.asReader(new StructList.Factory(TestAllTypes.factory))
+    val structListListReader = structListList.asReader(new StructList.Factory(TestAllTypes.FACTORY.get()))
     structListListReader.size() should equal (3)
     val structList0Reader = structListListReader.get(0)
     structList0Reader.size() should equal(1)
@@ -339,10 +339,10 @@ class EncodingSuite extends FunSuite {
 
   test("Generics") {
     val message = new MessageBuilder()
-    val factory = TestGenerics.newFactory(TestAllTypes.factory, Text.factory)
+    val factory = TestGenerics.newFactory(TestAllTypes.FACTORY.get(), Text.FACTORY.get())
     val root = message.initRoot(factory)
     TestUtil.initTestMessage(root.getFoo())
-    root.getDub().setFoo(Text.factory, new Text.Reader("Hello"))
+    root.getDub().setFoo(Text.FACTORY.get(), new Text.Reader("Hello"))
     val bar = root.getDub().initBar(1)
     bar.set(0, 11)
     val revBar = root.getRev().getBar()
@@ -363,13 +363,13 @@ class EncodingSuite extends FunSuite {
 
   test("UseGenerics") {
     val message = new MessageBuilder()
-    val root = message.initRoot(TestUseGenerics.factory)
+    val root = message.initRoot(TestUseGenerics.FACTORY.get())
 
     {
       val message2 = new MessageBuilder()
-      val factory2 = TestGenerics.newFactory(AnyPointer.factory, AnyPointer.factory)
+      val factory2 = TestGenerics.newFactory(AnyPointer.FACTORY.get(), AnyPointer.FACTORY.get())
       val root2 = message2.initRoot(factory2)
-      val dub2 = root2.initDub().setFoo(Text.factory, new Text.Reader("foobar"))
+      val dub2 = root2.initDub().setFoo(Text.FACTORY.get(), new Text.Reader("foobar"))
 
       root.setUnspecified(factory2, root2.asReader(factory2))
     }
@@ -380,7 +380,7 @@ class EncodingSuite extends FunSuite {
 
   test("Defaults") {
     val message = new MessageBuilder()
-    val defaults = message.initRoot(TestDefaults.factory)
+    val defaults = message.initRoot(TestDefaults.FACTORY.get())
     TestUtil.checkDefaultMessage(defaults)
     TestUtil.checkDefaultMessage(defaults.asReader())
     TestUtil.setDefaultMessage(defaults)
@@ -389,7 +389,7 @@ class EncodingSuite extends FunSuite {
 
   test("Unions") {
     val builder = new MessageBuilder()
-    val root = builder.initRoot(TestUnion.factory)
+    val root = builder.initRoot(TestUnion.FACTORY.get())
     val u0 = root.initUnion0()
     u0.initU0f1sp(10)
     assert(u0.which() == TestUnion.Union0.Which.U0F1SP)
@@ -400,7 +400,7 @@ class EncodingSuite extends FunSuite {
 
   test("Groups") {
     val builder = new MessageBuilder()
-    val root = builder.initRoot(TestGroups.factory)
+    val root = builder.initRoot(TestGroups.FACTORY.get())
 
     {
       val foo = root.getGroups().initFoo()
@@ -438,7 +438,7 @@ class EncodingSuite extends FunSuite {
 
   test("NestedLists") {
     val builder = new MessageBuilder()
-    val root = builder.initRoot(TestLists.factory)
+    val root = builder.initRoot(TestLists.FACTORY.get())
 
     {
       val intListList = root.initInt32ListList(2)
@@ -541,11 +541,11 @@ class EncodingSuite extends FunSuite {
 
   test("EmptyStruct") {
     val builder = new MessageBuilder()
-    val root = builder.initRoot(TestAnyPointer.factory)
+    val root = builder.initRoot(TestAnyPointer.FACTORY.get())
     root.hasAnyPointerField() should equal (false)
     val any = root.getAnyPointerField()
     any.isNull() should equal (true)
-    any.initAs(TestEmptyStruct.factory)
+    any.initAs(TestEmptyStruct.FACTORY.get())
     any.isNull() should equal (false)
     root.hasAnyPointerField() should equal (true)
 
@@ -558,9 +558,9 @@ class EncodingSuite extends FunSuite {
 
   test("TextBuilderIntUnderflow") {
     val message = new MessageBuilder()
-    val root = message.initRoot(TestAnyPointer.factory)
-    root.getAnyPointerField.initAs(org.capnproto.Data.factory, 0)
-    a [DecodeException] should be thrownBy root.getAnyPointerField.getAs(org.capnproto.Text.factory)
+    val root = message.initRoot(TestAnyPointer.FACTORY.get())
+    root.getAnyPointerField.initAs(org.capnproto.Data.FACTORY.get(), 0)
+    a [DecodeException] should be thrownBy root.getAnyPointerField.getAs(org.capnproto.Text.FACTORY.get())
   }
 
   test("InlineCompositeListIntOverflow") {
@@ -572,51 +572,51 @@ class EncodingSuite extends FunSuite {
     segment.order(java.nio.ByteOrder.LITTLE_ENDIAN)
     val message = new MessageReader(Array(segment), ReaderOptions.DEFAULT_READER_OPTIONS)
 
-    val root = message.getRoot(TestAnyPointer.factory)
+    val root = message.getRoot(TestAnyPointer.FACTORY.get())
     // TODO add this after we impelement totalSize():
     //root.totalSize()
 
     a [DecodeException] should be thrownBy
-      root.getAnyPointerField.getAs(new StructList.Factory(TestAllTypes.factory))
+      root.getAnyPointerField.getAs(new StructList.Factory(TestAllTypes.FACTORY.get()))
 
     val messageBuilder = new MessageBuilder()
-    val builderRoot = messageBuilder.initRoot(TestAnyPointer.factory)
+    val builderRoot = messageBuilder.initRoot(TestAnyPointer.FACTORY.get())
     a [DecodeException] should be thrownBy
-      builderRoot.getAnyPointerField.setAs(TestAnyPointer.factory, root)
+      builderRoot.getAnyPointerField.setAs(TestAnyPointer.FACTORY.get(), root)
 
   }
 
   test("VoidListAmplification") {
     val builder = new MessageBuilder()
-    builder.initRoot(TestAnyPointer.factory).getAnyPointerField().initAs(PrimitiveList.Void.factory, 1 << 28)
+    builder.initRoot(TestAnyPointer.FACTORY.get()).getAnyPointerField().initAs(PrimitiveList.Void.FACTORY.get(), 1 << 28)
 
     val segments = builder.getArena().getSegmentsForOutput()
     segments.length should equal (1)
 
     val reader = new MessageReader(segments, ReaderOptions.DEFAULT_READER_OPTIONS)
-    val root = reader.getRoot(TestAnyPointer.factory)
+    val root = reader.getRoot(TestAnyPointer.FACTORY.get())
     a [DecodeException] should be thrownBy
-       root.getAnyPointerField().getAs(new StructList.Factory(TestAllTypes.factory))
+       root.getAnyPointerField().getAs(new StructList.Factory(TestAllTypes.FACTORY.get()))
   }
 
   test("EmptyStructListAmplification") {
     val builder = new MessageBuilder()
-    builder.initRoot(TestAnyPointer.factory).getAnyPointerField()
-           .initAs(new StructList.Factory(TestEmptyStruct.factory), (1 << 29) - 1)
+    builder.initRoot(TestAnyPointer.FACTORY.get()).getAnyPointerField()
+           .initAs(new StructList.Factory(TestEmptyStruct.FACTORY.get()), (1 << 29) - 1)
 
     val segments = builder.getArena().getSegmentsForOutput()
     segments.length should equal (1)
 
     val reader = new MessageReader(segments, ReaderOptions.DEFAULT_READER_OPTIONS)
-    val root = reader.getRoot(TestAnyPointer.factory)
+    val root = reader.getRoot(TestAnyPointer.FACTORY.get())
     a [DecodeException] should be thrownBy
-       root.getAnyPointerField().getAs(new StructList.Factory(TestAllTypes.factory))
+       root.getAnyPointerField().getAs(new StructList.Factory(TestAllTypes.FACTORY.get()))
   }
 
   test("LongUint8List") {
     {
       val message = new MessageBuilder()
-      val allTypes = message.initRoot(TestAllTypes.factory)
+      val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
       val length = (1 << 28) + 1
       val list = allTypes.initUInt8List(length)
       list.size() should equal (length)
@@ -630,7 +630,7 @@ class EncodingSuite extends FunSuite {
   test("LongUint16List") {
     {
       val message = new MessageBuilder()
-      val allTypes = message.initRoot(TestAllTypes.factory)
+      val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
       val length = (1 << 27) + 1
       val list = allTypes.initUInt16List(length)
       list.size() should equal (length)
@@ -643,7 +643,7 @@ class EncodingSuite extends FunSuite {
   test("LongUint32List") {
     {
       val message = new MessageBuilder()
-      val allTypes = message.initRoot(TestAllTypes.factory)
+      val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
       val length = (1 << 26) + 1
       val list = allTypes.initUInt32List(length)
       list.size() should equal (length)
@@ -656,7 +656,7 @@ class EncodingSuite extends FunSuite {
   test("LongUint64List") {
     {
       val message = new MessageBuilder()
-      val allTypes = message.initRoot(TestAllTypes.factory)
+      val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
       val length = (1 << 25) + 1
       val list = allTypes.initUInt64List(length)
       list.size() should equal (length)
@@ -669,7 +669,7 @@ class EncodingSuite extends FunSuite {
   test("LongFloat32List") {
     {
       val message = new MessageBuilder()
-      val allTypes = message.initRoot(TestAllTypes.factory)
+      val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
       val length = (1 << 26) + 1
       val list = allTypes.initFloat32List(length)
       list.size() should equal (length)
@@ -682,7 +682,7 @@ class EncodingSuite extends FunSuite {
   test("LongFloat64List") {
     {
       val message = new MessageBuilder()
-      val allTypes = message.initRoot(TestAllTypes.factory)
+      val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
       val length = (1 << 25) + 1
       val list = allTypes.initFloat64List(length)
       list.size() should equal (length)
@@ -695,7 +695,7 @@ class EncodingSuite extends FunSuite {
   test("LongStructList") {
     {
       val message = new MessageBuilder()
-      val allTypes = message.initRoot(TestAllTypes.factory)
+      val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
       val length = (1 << 21) + 1
       val list = allTypes.initStructList(length)
       list.size() should equal (length)
@@ -707,7 +707,7 @@ class EncodingSuite extends FunSuite {
   test("LongTextList") {
     {
       val message = new MessageBuilder()
-      val allTypes = message.initRoot(TestAllTypes.factory)
+      val allTypes = message.initRoot(TestAllTypes.FACTORY.get())
       val length = (1 << 25) + 1
       val list = allTypes.initTextList(length)
       list.size() should equal (length)
@@ -720,7 +720,7 @@ class EncodingSuite extends FunSuite {
   test("LongListList") {
     {
       val message = new MessageBuilder()
-      val root = message.initRoot(TestLists.factory)
+      val root = message.initRoot(TestLists.FACTORY.get())
       val length = (1 << 25) + 1
       val list = root.initStructListList(length)
       list.size() should equal (length)
@@ -732,34 +732,34 @@ class EncodingSuite extends FunSuite {
 
   test("StructSetters") {
     val builder = new MessageBuilder()
-    val root = builder.initRoot(TestAllTypes.factory)
+    val root = builder.initRoot(TestAllTypes.FACTORY.get())
     TestUtil.initTestMessage(root)
 
     {
       val builder2 = new MessageBuilder()
-      builder2.setRoot(TestAllTypes.factory, root.asReader())
-      TestUtil.checkTestMessage(builder2.getRoot(TestAllTypes.factory))
+      builder2.setRoot(TestAllTypes.FACTORY.get(), root.asReader())
+      TestUtil.checkTestMessage(builder2.getRoot(TestAllTypes.FACTORY.get()))
     }
 
     {
       val builder2 = new MessageBuilder()
-      val root2 = builder2.getRoot(TestAllTypes.factory)
+      val root2 = builder2.getRoot(TestAllTypes.FACTORY.get())
       root2.setStructField(root.asReader())
       TestUtil.checkTestMessage(root2.getStructField())
     }
 
     {
       val builder2 = new MessageBuilder()
-      val root2 = builder2.getRoot(TestAnyPointer.factory)
-      root2.getAnyPointerField().setAs(TestAllTypes.factory, root.asReader())
-      TestUtil.checkTestMessage(root2.getAnyPointerField.getAs(TestAllTypes.factory))
+      val root2 = builder2.getRoot(TestAnyPointer.FACTORY.get())
+      root2.getAnyPointerField().setAs(TestAllTypes.FACTORY.get(), root.asReader())
+      TestUtil.checkTestMessage(root2.getAnyPointerField.getAs(TestAllTypes.FACTORY.get()))
     }
   }
 
   test("SerializedSize") {
     val builder = new MessageBuilder()
-    val root = builder.initRoot(TestAnyPointer.factory)
-    root.getAnyPointerField().setAs(Text.factory, new Text.Reader("12345"))
+    val root = builder.initRoot(TestAnyPointer.FACTORY.get())
+    root.getAnyPointerField().setAs(Text.FACTORY.get(), new Text.Reader("12345"))
 
     // one word for segment table, one for the root pointer,
     // one for the body of the TestAnyPointer struct,
@@ -769,7 +769,7 @@ class EncodingSuite extends FunSuite {
 
   test("Import") {
     val builder = new MessageBuilder()
-    val root = builder.initRoot(org.capnproto.test.TestImport.Foo.factory)
+    val root = builder.initRoot(org.capnproto.test.TestImport.Foo.FACTORY.get())
     val field = root.initImportedStruct()
     TestUtil.initTestMessage(field)
     TestUtil.checkTestMessage(field)
@@ -778,25 +778,25 @@ class EncodingSuite extends FunSuite {
 
   test("GenericMap") {
     val builder = new MessageBuilder()
-    val mapFactory = new GenericMap.Factory(Text.factory, TestAllTypes.factory)
-    val entryFactory = new StructList.Factory(new GenericMap.Entry.Factory(Text.factory, TestAllTypes.factory));
+    val mapFactory = new GenericMap.Factory(Text.FACTORY.get(), TestAllTypes.FACTORY.get())
+    val entryFactory = new StructList.Factory(new GenericMap.Entry.Factory(Text.FACTORY.get(), TestAllTypes.FACTORY.get()));
     val root = builder.initRoot(mapFactory)
 
     {
       val entries = root.initEntries(entryFactory, 3);
 
       val entry0 = entries.get(0)
-      entry0.setKey(Text.factory, new Text.Reader("foo"))
+      entry0.setKey(Text.FACTORY.get(), new Text.Reader("foo"))
       val value0 = entry0.initValue()
       value0.setInt64Field(101);
 
       val entry1 = entries.get(1)
-      entry1.setKey(Text.factory, new Text.Reader("bar"))
+      entry1.setKey(Text.FACTORY.get(), new Text.Reader("bar"))
       val value1 = entry1.initValue()
       value1.setInt64Field(202);
 
       val entry2 = entries.get(2)
-      entry2.setKey(Text.factory, new Text.Reader("baz"))
+      entry2.setKey(Text.FACTORY.get(), new Text.Reader("baz"))
       val value2 = entry2.initValue()
       value2.setInt64Field(303);
     }
@@ -819,24 +819,24 @@ class EncodingSuite extends FunSuite {
 
   test("setWithCaveats") {
     val builder = new MessageBuilder()
-    val root = builder.initRoot(TestAllTypes.factory)
+    val root = builder.initRoot(TestAllTypes.FACTORY.get())
     val list = root.initStructList(2)
 
     {
       val message1 = new MessageBuilder()
-      val root1 = message1.initRoot(TestAllTypes.factory)
+      val root1 = message1.initRoot(TestAllTypes.FACTORY.get())
       root1.setInt8Field(11)
-      list.setWithCaveats(TestAllTypes.factory, 0, root1.asReader())
+      list.setWithCaveats(TestAllTypes.FACTORY.get(), 0, root1.asReader())
     }
 
     {
       val message2 = new MessageBuilder()
-      val root2 = message2.initRoot(TestAllTypes.factory)
+      val root2 = message2.initRoot(TestAllTypes.FACTORY.get())
       TestUtil.initTestMessage(root2)
-      list.setWithCaveats(TestAllTypes.factory, 1, root2.asReader())
+      list.setWithCaveats(TestAllTypes.FACTORY.get(), 1, root2.asReader())
     }
 
-    val listReader = list.asReader(TestAllTypes.factory)
+    val listReader = list.asReader(TestAllTypes.FACTORY.get())
     listReader.get(0).getInt8Field() should equal (11)
     TestUtil.checkTestMessage(listReader.get(1))
   }

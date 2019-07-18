@@ -55,7 +55,12 @@ public class PrimitiveList {
             }
 
         }
-        public static final Factory factory = new Factory();
+        public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>() {
+            @Override
+            protected Factory initialValue() {
+                return new Factory();
+            }
+        };
 
         public static final class Reader extends ListReader implements Collection<org.capnproto.Void> {
 
@@ -310,7 +315,12 @@ public class PrimitiveList {
                 return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
             }
         }
-        public static final Factory factory = new Factory();
+        public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>() {
+            @Override
+            protected Factory initialValue() {
+                return new Factory();
+            }
+        };
 
         public static final class Reader extends ListReader implements Collection<java.lang.Boolean> {
 
@@ -570,7 +580,12 @@ public class PrimitiveList {
                 return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
             }
         }
-        public static final Factory factory = new Factory();
+        public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>(){
+       @Override
+       protected Factory initialValue() {
+           return new Factory();
+       }
+    };
 
         public static final class Reader extends ListReader implements Collection<java.lang.Byte> {
 
@@ -831,7 +846,12 @@ public class PrimitiveList {
             }
 
         }
-        public static final Factory factory = new Factory();
+        public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>(){
+       @Override
+       protected Factory initialValue() {
+           return new Factory();
+       }
+    };
 
         public static final class Reader extends ListReader implements Collection<java.lang.Short> {
 
@@ -1092,7 +1112,12 @@ public class PrimitiveList {
             }
 
         }
-        public static final Factory factory = new Factory();
+        public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>(){
+       @Override
+       protected Factory initialValue() {
+           return new Factory();
+       }
+    };
 
         public static final class Reader extends ListReader implements Collection<Integer> {
 
@@ -1353,7 +1378,12 @@ public class PrimitiveList {
                 return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
             }
         }
-        public static final Factory factory = new Factory();
+        public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>(){
+       @Override
+       protected Factory initialValue() {
+           return new Factory();
+       }
+    };
 
         public static final class Reader extends ListReader implements Collection<java.lang.Float> {
 
@@ -1615,7 +1645,12 @@ public class PrimitiveList {
                 return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
             }
         }
-        public static final Factory factory = new Factory();
+        public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>(){
+       @Override
+       protected Factory initialValue() {
+           return new Factory();
+       }
+    };
 
         public static final class Reader extends ListReader implements Collection<java.lang.Long> {
 
@@ -1873,7 +1908,12 @@ public class PrimitiveList {
                 return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
             }
         }
-        public static final Factory factory = new Factory();
+        public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>(){
+       @Override
+       protected Factory initialValue() {
+           return new Factory();
+       }
+    };
 
         public static final class Reader extends ListReader implements Collection<java.lang.Double> {
 

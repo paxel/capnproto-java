@@ -1,8 +1,6 @@
 package org.capnproto.jmh;
 
 import java.util.concurrent.TimeUnit;
-import org.capnproto.AllocatingArena;
-import org.capnproto.BuilderArena;
 import org.capnproto.MessageBuilder;
 import org.capnproto.benchmark.CarSalesSchema;
 import org.capnproto.benchmark.DataSchema;
@@ -12,8 +10,6 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
@@ -42,7 +38,7 @@ public class CreateObjectsJmh {
     @Benchmark
     public void createCar(Blackhole hole) {
         MessageBuilder builder = new MessageBuilder();
-        final CarSalesSchema.Car.Builder car = builder.initRoot(CarSalesSchema.Car.factory);
+        final CarSalesSchema.Car.Builder car = builder.initRoot(CarSalesSchema.Car.FACTORY.get());
         createCar(car);
 
         // consume the object in a way, the JVM doesn't know it's unused
@@ -73,7 +69,7 @@ public class CreateObjectsJmh {
     @Benchmark
     public void createParkingLotWith1000CarsWithStream(Blackhole hole) {
         MessageBuilder builder = new MessageBuilder();
-        final CarSalesSchema.ParkingLot.Builder parkingLot = builder.initRoot(CarSalesSchema.ParkingLot.factory);
+        final CarSalesSchema.ParkingLot.Builder parkingLot = builder.initRoot(CarSalesSchema.ParkingLot.FACTORY.get());
         parkingLot.initCars(1000);
         parkingLot.getCars().stream().forEach(this::createCar);
 
@@ -84,7 +80,7 @@ public class CreateObjectsJmh {
     @Benchmark
     public void createParkingLotWith1000Cars(Blackhole hole) {
         MessageBuilder builder = new MessageBuilder();
-        final CarSalesSchema.ParkingLot.Builder parkingLot = builder.initRoot(CarSalesSchema.ParkingLot.factory);
+        final CarSalesSchema.ParkingLot.Builder parkingLot = builder.initRoot(CarSalesSchema.ParkingLot.FACTORY.get());
         parkingLot.initCars(1000);
         for (int i = 0; i < 1000; i++) {
             createCar(parkingLot.getCars().get(i));
@@ -97,7 +93,7 @@ public class CreateObjectsJmh {
     @Benchmark
     public void create100kData(Blackhole hole) {
         MessageBuilder builder = new MessageBuilder();
-        final DataSchema.Message.Builder initRoot = builder.initRoot(DataSchema.Message.factory);
+        final DataSchema.Message.Builder initRoot = builder.initRoot(DataSchema.Message.FACTORY.get());
         initRoot.initLeft().setValue(new byte[100_000]);
     }
 

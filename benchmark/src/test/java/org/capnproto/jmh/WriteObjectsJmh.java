@@ -56,19 +56,19 @@ public class WriteObjectsJmh {
         public void init() {
             {
                 MessageBuilder builder = new MessageBuilder();
-                final CarSalesSchema.Car.Builder car = builder.initRoot(CarSalesSchema.Car.factory);
+                final CarSalesSchema.Car.Builder car = builder.initRoot(CarSalesSchema.Car.FACTORY.get());
                 createCar(car);
                 this.car = builder;
             }
             {
                 MessageBuilder builder = new MessageBuilder();
-                final DataSchema.Message.Builder initRoot = builder.initRoot(DataSchema.Message.factory);
+                final DataSchema.Message.Builder initRoot = builder.initRoot(DataSchema.Message.FACTORY.get());
                 initRoot.initLeft().setValue(new byte[100_000]);
                 this.data = builder;
             }
             {
                 MessageBuilder builder = new MessageBuilder();
-                final CarSalesSchema.ParkingLot.Builder parkingLot = builder.initRoot(CarSalesSchema.ParkingLot.factory);
+                final CarSalesSchema.ParkingLot.Builder parkingLot = builder.initRoot(CarSalesSchema.ParkingLot.FACTORY.get());
                 parkingLot.initCars(1000);
                 parkingLot.getCars().stream().forEach(this::createCar);
                 this.lot = builder;

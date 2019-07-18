@@ -52,7 +52,12 @@ public final class DataList {
             return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
         }
     }
-    public static final Factory factory = new Factory();
+    public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>() {
+        @Override
+        protected Factory initialValue() {
+            return new Factory();
+        }
+    };
 
     public static final class Reader extends ListReader implements Collection<Data.Reader> {
 
@@ -71,12 +76,12 @@ public final class DataList {
         }
 
         public Data.Reader get(int index) {
-            return _getPointerElement(Data.factory, index);
+            return _getPointerElement(Data.FACTORY.get(), index);
         }
 
         @Override
         public boolean isEmpty() {
-            return elementCount==0;
+            return elementCount == 0;
         }
 
         @Override
@@ -129,7 +134,6 @@ public final class DataList {
             throw new UnsupportedOperationException("Unsupported");
         }
 
-
         public final class Iterator implements java.util.Iterator<Data.Reader> {
 
             public Reader list;
@@ -141,7 +145,7 @@ public final class DataList {
 
             @Override
             public Data.Reader next() {
-                return this.list._getPointerElement(Data.factory, idx++);
+                return this.list._getPointerElement(Data.FACTORY.get(), idx++);
             }
 
             @Override
@@ -176,11 +180,11 @@ public final class DataList {
         }
 
         public final Data.Builder get(int index) {
-            return _getPointerElement(Data.factory, index);
+            return _getPointerElement(Data.FACTORY.get(), index);
         }
 
         public final void set(int index, Data.Reader value) {
-            _setPointerElement(Data.factory, index, value);
+            _setPointerElement(Data.FACTORY.get(), index, value);
         }
 
         public final Reader asReader() {
@@ -200,7 +204,7 @@ public final class DataList {
 
             @Override
             public Data.Builder next() {
-                return this.list._getPointerElement(Data.factory, idx++);
+                return this.list._getPointerElement(Data.FACTORY.get(), idx++);
             }
 
             @Override
@@ -218,9 +222,10 @@ public final class DataList {
         public java.util.Iterator<Data.Builder> iterator() {
             return new Iterator(this);
         }
+
         @Override
         public boolean isEmpty() {
-            return elementCount==0;
+            return elementCount == 0;
         }
 
         @Override
@@ -272,8 +277,6 @@ public final class DataList {
         public void clear() {
             throw new UnsupportedOperationException("Unsupported");
         }
-
-
 
         @Override
         public String toString() {

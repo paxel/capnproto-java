@@ -68,7 +68,12 @@ public final class Text {
             WireHelpers.setTextPointer(pointer, segment, value);
         }
     }
-    public static final Factory factory = new Factory();
+    public static final ThreadLocal<Factory> FACTORY = new ThreadLocal<Factory>() {
+        @Override
+        protected Factory initialValue() {
+            return new Factory();
+        }
+    };
 
     public static final class Reader {
 

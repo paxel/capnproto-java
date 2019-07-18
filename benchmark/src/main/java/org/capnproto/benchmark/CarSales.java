@@ -24,6 +24,12 @@ package org.capnproto.benchmark;
 import org.capnproto.StructList;
 import org.capnproto.Text;
 import org.capnproto.benchmark.CarSalesSchema.*;
+import org.capnproto.benchmark.CarSalesSchema.Car;
+import org.capnproto.benchmark.CarSalesSchema.Color;
+import org.capnproto.benchmark.CarSalesSchema.Engine;
+import org.capnproto.benchmark.CarSalesSchema.ParkingLot;
+import org.capnproto.benchmark.CarSalesSchema.TotalValue;
+import org.capnproto.benchmark.CarSalesSchema.Wheel;
 
 public class CarSales
     extends TestCase<ParkingLot.Factory, ParkingLot.Builder, ParkingLot.Reader,
@@ -135,7 +141,7 @@ public class CarSales
 
     public static void main(String[] args) {
         CarSales testCase = new CarSales();
-        testCase.execute(args, ParkingLot.factory, TotalValue.factory);
+        testCase.execute(args, ParkingLot.FACTORY.get(), TotalValue.FACTORY.get());
     }
 
 }
