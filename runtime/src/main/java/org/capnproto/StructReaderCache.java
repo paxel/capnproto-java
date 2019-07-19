@@ -1,7 +1,7 @@
 package org.capnproto;
 
+import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
 /**
@@ -12,7 +12,7 @@ import java.util.function.Supplier;
  */
 public class StructReaderCache<T extends StructReader> {
 
-    private final Queue<T> recycler = new ConcurrentLinkedQueue<>();
+    private final Queue<T> recycler = new ArrayDeque<>();
 
     private final Supplier<T> factory;
 
