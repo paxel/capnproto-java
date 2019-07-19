@@ -1548,10 +1548,6 @@ private:
         kj::strTree(
           spaces(indent), "  public static final org.capnproto.StructSize STRUCT_SIZE = new org.capnproto.StructSize((short)", structNode.getDataWordCount(),
           ",(short)", structNode.getPointerCount(), ");\n"),
-              // add cache if not generic
-              ((factoryTypeParams.size()==0)?kj::strTree(
-        spaces(indent), "  public static final org.capnproto.ThreadLocalStructReaderCache cache = new org.capnproto.ThreadLocalStructReaderCache();\n"
-              ).flatten():kj::str("")),
 
         spaces(indent), "  public static final class Factory", factoryTypeParams,
         " extends org.capnproto.StructFactory<Builder", builderTypeParams, ", Reader", readerTypeParams, "> {\n",
@@ -1563,13 +1559,21 @@ private:
           return kj::strTree(spaces(indent), "      this.", p, "_Factory = ", p, "_Factory;\n");
         },
         spaces(indent), "    }\n",
+              // add cache if not generic
+              ((factoryTypeParams.size()==0)?kj::strTree(
+        spaces(indent), "              private final static ThreadLocal<org.capnproto.StructReaderCache<Reader>> CACHE = new ThreadLocal<org.capnproto.StructReaderCache<Reader>>() {\n",
+        spaces(indent), "                @Override\n",
+        spaces(indent), "                protected org.capnproto.StructReaderCache<Reader> initialValue() {\n",
+        spaces(indent), "                    return new org.capnproto.StructReaderCache<>(Reader::new);\n",
+        spaces(indent), "                }\n",
+        spaces(indent), "            };\n"
+              ).flatten():kj::str("")),
 
-        spaces(indent),
-        "    public final Reader", readerTypeParams, " constructReader(org.capnproto.SegmentDataContainer segment, int data,",
+        spaces(indent),        "    public final Reader", readerTypeParams, " constructReader(org.capnproto.SegmentDataContainer segment, int data,",
         "int pointers, int dataSize, short pointerCount, int nestingLimit) {\n",
                 ((factoryTypeParams.size()==0)?
                     // use cache
-        kj::strTree(spaces(indent), "      return cache.getCache(",name,".Reader.class).getOrCreate().init(segment,data,pointers,dataSize,pointerCount,nestingLimit);\n").flatten():
+        kj::strTree(spaces(indent), "      return CACHE.get().getOrCreate().init(segment,data,pointers,dataSize,pointerCount,nestingLimit);\n").flatten():
                     // always create new object
                     kj::strTree(spaces(indent), "      return new Reader",readerTypeParams, "(",
         KJ_MAP(p, typeParamVec) {
