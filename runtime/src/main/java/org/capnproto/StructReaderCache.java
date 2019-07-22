@@ -2,26 +2,23 @@ package org.capnproto;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-/**
- * This is a cache for one type of StructReader. It is only filled with
- * StructReader on which recycle() is called.
- *
- * @param <T> The type of the StructReader.
- */
 public class StructReaderCache<T extends StructReader> {
 
     private final Queue<T> recycler = new ArrayDeque<>();
 
     private final Supplier<T> factory;
+    private final Consumer<StructReader> fn;
 
     public StructReaderCache(Supplier<T> factory) {
         this.factory = factory;
+        this.fn = this::recycle;
     }
 
     /**
-     * Provides a new StructReader if the Queue is empty, or the oldes Reader
+     * Provides a new StructReader if the Queue is empty, or the oldest Reader
      * from the recycler queue.
      *
      * @return a new or a recycled T.
@@ -29,17 +26,11 @@ public class StructReaderCache<T extends StructReader> {
     public T getOrCreate() {
         T recycled = recycler.poll();
         if (recycled != null) {
-            // We are the only one that removed that from the queue, so no racing condition here
-            activateRecycler(recycled);
             return recycled;
         }
         final T newReader = factory.get();
-        activateRecycler(newReader);
+        newReader.onRecycle(this.fn);
         return newReader;
-    }
-
-    private void activateRecycler(final T reader) {
-        reader.onRecycle(this::recycle);
     }
 
     private <U extends StructReader> void recycle(U reader) {
