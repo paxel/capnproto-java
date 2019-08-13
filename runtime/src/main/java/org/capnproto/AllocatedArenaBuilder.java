@@ -88,7 +88,7 @@ public class AllocatedArenaBuilder {
     /**
      * Reads the frame data of one Capnp message into a byteBuffer.
      *
-     * @param input the input data.
+     * @param bc The input data.
      * @return a ByteBuffer containing a complete Frame or null if EOF
      * @throws IOException if reading was impossible or input data invalid.
      */
@@ -120,8 +120,10 @@ public class AllocatedArenaBuilder {
 
         ByteBuffer frame = byteBufferFactory.apply(totalWords * Constants.BYTES_PER_WORD + segmentSizeHeaderSize + Constants.BYTES_PER_WORD);
         // write first word
+        firstWord.rewind();
         frame.put(firstWord);
         // write additional sizes
+        segmentSizeHeader.rewind();
         frame.put(segmentSizeHeader);
         // read remaining stuff or fail
         read = fillBuffer(bc, frame);
