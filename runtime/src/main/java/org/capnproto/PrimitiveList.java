@@ -43,7 +43,9 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                return new Reader(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                final Reader reader = new Reader();
+                reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                return reader;
             }
 
             @Override
@@ -59,12 +61,7 @@ public class PrimitiveList {
 
         public static final class Reader extends ListReader implements Collection<org.capnproto.Void> {
 
-            public Reader(SegmentDataContainer segment,
-                    int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount,
-                    int nestingLimit) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            public Reader() {
             }
 
             @Override
@@ -178,9 +175,11 @@ public class PrimitiveList {
             }
 
             public final Reader asReader() {
-                return new Reader(this.segment, this.ptr, this.elementCount, this.step,
+                final Reader reader = new Reader();
+                reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
+                return reader;
             }
 
             public org.capnproto.Void get(int index) {
@@ -299,7 +298,9 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                return new Reader(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                final Reader reader = new Reader();
+                reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                return reader;
             }
 
             @Override
@@ -314,12 +315,7 @@ public class PrimitiveList {
 
         public static final class Reader extends ListReader implements Collection<java.lang.Boolean> {
 
-            public Reader(SegmentDataContainer segment,
-                    int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount,
-                    int nestingLimit) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            public Reader() {
             }
 
             public final boolean get(int index) {
@@ -441,9 +437,11 @@ public class PrimitiveList {
             }
 
             public final Reader asReader() {
-                return new Reader(this.segment, this.ptr, this.elementCount, this.step,
+                final Reader reader = new Reader();
+                reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
+                return reader;
             }
 
             @Override
@@ -559,7 +557,9 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                return new Reader(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                final Reader reader = new Reader();
+                reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                return reader;
             }
 
             @Override
@@ -574,12 +574,7 @@ public class PrimitiveList {
 
         public static final class Reader extends ListReader implements Collection<java.lang.Byte> {
 
-            public Reader(SegmentDataContainer segment,
-                    int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount,
-                    int nestingLimit) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            public Reader() {
             }
 
             public byte get(int index) {
@@ -701,9 +696,11 @@ public class PrimitiveList {
             }
 
             public final Reader asReader() {
-                return new Reader(this.segment, this.ptr, this.elementCount, this.step,
+                final Reader reader = new Reader();
+                reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
+                return reader;
             }
 
             @Override
@@ -819,7 +816,9 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                return new Reader(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                final Reader reader = new Reader();
+                reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                return reader;
             }
 
             @Override
@@ -835,12 +834,7 @@ public class PrimitiveList {
 
         public static final class Reader extends ListReader implements Collection<java.lang.Short> {
 
-            public Reader(SegmentDataContainer segment,
-                    int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount,
-                    int nestingLimit) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            public Reader() {
             }
 
             public short get(int index) {
@@ -962,9 +956,11 @@ public class PrimitiveList {
             }
 
             public final Reader asReader() {
-                return new Reader(this.segment, this.ptr, this.elementCount, this.step,
+                final Reader reader = new Reader();
+                reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
+                return reader;
             }
 
             @Override
@@ -1080,7 +1076,9 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                return new Reader(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                final Reader reader = new Reader();
+                reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                return reader;
             }
 
             @Override
@@ -1096,12 +1094,7 @@ public class PrimitiveList {
 
         public static final class Reader extends ListReader implements Collection<Integer> {
 
-            public Reader(SegmentDataContainer segment,
-                    int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount,
-                    int nestingLimit) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            public Reader() {
             }
 
             public int get(int index) {
@@ -1223,9 +1216,11 @@ public class PrimitiveList {
             }
 
             public final Reader asReader() {
-                return new Reader(this.segment, this.ptr, this.elementCount, this.step,
+                final Reader reader = new Reader();
+                reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
+                return reader;
             }
 
             @Override
@@ -1342,7 +1337,9 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                return new Reader(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                final Reader reader = new Reader();
+                reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                return reader;
             }
 
             @Override
@@ -1357,12 +1354,7 @@ public class PrimitiveList {
 
         public static final class Reader extends ListReader implements Collection<java.lang.Float> {
 
-            public Reader(SegmentDataContainer segment,
-                    int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount,
-                    int nestingLimit) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            public Reader() {
             }
 
             public float get(int index) {
@@ -1485,9 +1477,11 @@ public class PrimitiveList {
             }
 
             public final Reader asReader() {
-                return new Reader(this.segment, this.ptr, this.elementCount, this.step,
+                final Reader reader = new Reader();
+                reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
+                return reader;
             }
 
             @Override
@@ -1604,7 +1598,9 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                return new Reader(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                final Reader reader = new Reader();
+                reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                return reader;
             }
 
             @Override
@@ -1619,12 +1615,7 @@ public class PrimitiveList {
 
         public static final class Reader extends ListReader implements Collection<java.lang.Long> {
 
-            public Reader(SegmentDataContainer segment,
-                    int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount,
-                    int nestingLimit) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            public Reader() {
             }
 
             public long get(int index) {
@@ -1745,9 +1736,11 @@ public class PrimitiveList {
             }
 
             public final Reader asReader() {
-                return new Reader(this.segment, this.ptr, this.elementCount, this.step,
+                final Reader reader = new Reader();
+                reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
+                return reader;
             }
 
             @Override
@@ -1862,7 +1855,9 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                return new Reader(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                final Reader reader = new Reader();
+                reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+                return reader;
             }
 
             @Override
@@ -1877,12 +1872,7 @@ public class PrimitiveList {
 
         public static final class Reader extends ListReader implements Collection<java.lang.Double> {
 
-            public Reader(SegmentDataContainer segment,
-                    int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount,
-                    int nestingLimit) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            public Reader() {
             }
 
             public double get(int index) {
@@ -2005,9 +1995,11 @@ public class PrimitiveList {
             }
 
             public final Reader asReader() {
-                return new Reader(this.segment, this.ptr, this.elementCount, this.step,
+                final Reader reader = new Reader();
+                reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
+                return reader;
             }
 
             @Override

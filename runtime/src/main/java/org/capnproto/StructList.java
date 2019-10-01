@@ -45,8 +45,10 @@ public final class StructList {
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            return new Reader<>(factory,
-                    segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            final Reader<ElementReader> reader = new Reader<>();
+            reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            reader.factory = this.factory;
+            return reader;
         }
 
         @Override
@@ -86,16 +88,9 @@ public final class StructList {
 
     public static final class Reader<T> extends ListReader implements Collection<T> {
 
-        public final StructReader.Factory<T> factory;
+        public StructReader.Factory<T> factory;
 
-        public Reader(StructReader.Factory<T> factory,
-                SegmentDataContainer segment,
-                int ptr,
-                int elementCount, int step,
-                int structDataSize, short structPointerCount,
-                int nestingLimit) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
-            this.factory = factory;
+        public Reader() {
         }
 
         public Stream<T> stream() {
@@ -232,10 +227,12 @@ public final class StructList {
 
         //TODO: rework generics, so that we don't need this factory parameter
         public final <U extends StructReader> Reader<U> asReader(StructFactory<T, U> factory) {
-            return new Reader(factory,
-                    this.segment, this.ptr, this.elementCount, this.step,
+            final Reader reader = new Reader();
+            reader.init(this.segment, this.ptr, this.elementCount, this.step,
                     this.structDataSize, this.structPointerCount,
                     java.lang.Integer.MAX_VALUE);
+            reader.factory = factory;
+            return reader;
         }
 
         public final class Iterator implements java.util.Iterator<T> {

@@ -41,7 +41,9 @@ public final class TextList {
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            return new Reader(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            final Reader reader = new Reader();
+            reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            return reader;
         }
 
         @Override
@@ -56,12 +58,7 @@ public final class TextList {
 
     public static final class Reader extends ListReader implements Collection<String> {
 
-        public Reader(SegmentDataContainer segment,
-                int ptr,
-                int elementCount, int step,
-                int structDataSize, short structPointerCount,
-                int nestingLimit) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+        public Reader() {
         }
 
         public Text.Reader get(int index) {
@@ -126,7 +123,7 @@ public final class TextList {
         @Override
         public Stream<String> stream() {
             return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
-                    Spliterator.SIZED & Spliterator.IMMUTABLE            ), false);
+                    Spliterator.SIZED & Spliterator.IMMUTABLE), false);
         }
 
         @Override
@@ -183,9 +180,11 @@ public final class TextList {
         }
 
         public final Reader asReader() {
-            return new Reader(this.segment, this.ptr, this.elementCount, this.step,
+            final Reader reader = new Reader();
+            reader.init(this.segment, this.ptr, this.elementCount, this.step,
                     this.structDataSize, this.structPointerCount,
                     java.lang.Integer.MAX_VALUE);
+            return reader;
         }
 
         public final class Iterator implements java.util.Iterator<String> {

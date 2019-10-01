@@ -52,8 +52,10 @@ public class EnumList {
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            return new Reader<>(values,
-                    segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            final Reader<T> reader = new Reader<>();
+            reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            reader.values = this.values;
+            return reader;
         }
 
         @Override
@@ -67,16 +69,9 @@ public class EnumList {
 
     public static final class Reader<T extends java.lang.Enum> extends ListReader implements Collection<T> {
 
-        public final T values[];
+        public T values[];
 
-        public Reader(T values[],
-                SegmentDataContainer segment,
-                int ptr,
-                int elementCount, int step,
-                int structDataSize, short structPointerCount,
-                int nestingLimit) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
-            this.values = values;
+        public Reader() {
         }
 
         public T get(int index) {
@@ -204,10 +199,12 @@ public class EnumList {
         }
 
         public final Reader<T> asReader() {
-            return new Reader(this.values,
-                    this.segment, this.ptr, this.elementCount, this.step,
+            final Reader reader = new Reader();
+            reader.init(this.segment, this.ptr, this.elementCount, this.step,
                     this.structDataSize, this.structPointerCount,
                     java.lang.Integer.MAX_VALUE);
+            reader.values = this.values;
+            return reader;
         }
 
         @Override

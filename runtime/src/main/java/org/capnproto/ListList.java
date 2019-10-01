@@ -45,7 +45,10 @@ public final class ListList {
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            return new Reader<>(factory, segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            Reader<ElementReader> reader = new Reader<>();
+            reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            reader.factory = this.factory;
+            return reader;
         }
 
         @Override
@@ -59,16 +62,9 @@ public final class ListList {
 
     public static final class Reader<T> extends ListReader implements Collection<T> {
 
-        private final FromPointerReader<T> factory;
+        private FromPointerReader<T> factory;
 
-        public Reader(FromPointerReader<T> factory,
-                SegmentDataContainer segment,
-                int ptr,
-                int elementCount, int step,
-                int structDataSize, short structPointerCount,
-                int nestingLimit) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
-            this.factory = factory;
+        public Reader() {
         }
 
         public T get(int index) {
@@ -194,11 +190,14 @@ public final class ListList {
         }
 
         // TODO: rework generics so that we don't need this factory parameter
-        public final <U extends ListReader> Reader<U> asReader(ListFactory<T, U> factor) {
-            return new Reader(factor,
+        public final <U extends ListReader> Reader<U> asReader(ListFactory<T, U> factory) {
+            final Reader reader = new Reader();
+            reader.init(
                     this.segment, this.ptr, this.elementCount, this.step,
                     this.structDataSize, this.structPointerCount,
                     java.lang.Integer.MAX_VALUE);
+            reader.factory = factory;
+            return reader;
         }
 
         @Override

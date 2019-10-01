@@ -1136,14 +1136,15 @@ final class WireHelpers {
                         resolved.segment.getArena().checkReadLimit(elementCount);
                     }
 
-                    return setListPointer(dstSegment, dstOffset,
-                            new ListReader(resolved.segment,
-                                    ptr * Constants.BYTES_PER_WORD,
-                                    elementCount,
-                                    wordsPerElement * Constants.BITS_PER_WORD,
-                                    StructPointer.dataSize(tag) * Constants.BITS_PER_WORD,
-                                    StructPointer.ptrCount(tag),
-                                    nestingLimit - 1));
+                    ListReader listReader = new ListReader();
+                    listReader.init(resolved.segment,
+                            ptr * Constants.BYTES_PER_WORD,
+                            elementCount,
+                            wordsPerElement * Constants.BITS_PER_WORD,
+                            StructPointer.dataSize(tag) * Constants.BITS_PER_WORD,
+                            StructPointer.ptrCount(tag),
+                            nestingLimit - 1);
+                    return setListPointer(dstSegment, dstOffset, listReader);
                 } else {
                     int dataSize = ElementSize.dataBitsPerElement(elementSize);
                     short pointerCount = ElementSize.pointersPerElement(elementSize);
@@ -1159,14 +1160,15 @@ final class WireHelpers {
                         resolved.segment.getArena().checkReadLimit(elementCount);
                     }
 
-                    return setListPointer(dstSegment, dstOffset,
-                            new ListReader(resolved.segment,
-                                    resolved.ptr * Constants.BYTES_PER_WORD,
-                                    elementCount,
-                                    step,
-                                    dataSize,
-                                    pointerCount,
-                                    nestingLimit - 1));
+                    ListReader listReader = new ListReader();
+                    listReader.init(resolved.segment,
+                            resolved.ptr * Constants.BYTES_PER_WORD,
+                            elementCount,
+                            step,
+                            dataSize,
+                            pointerCount,
+                            nestingLimit - 1);
+                    return setListPointer(dstSegment, dstOffset, listReader);
                 }
 
             case WirePointer.FAR:

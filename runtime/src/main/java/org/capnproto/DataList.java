@@ -41,7 +41,9 @@ public final class DataList {
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            return new Reader(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            final Reader reader = new Reader();
+            reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            return reader;
         }
 
         @Override
@@ -56,12 +58,7 @@ public final class DataList {
 
     public static final class Reader extends ListReader implements Collection<Data.Reader> {
 
-        public Reader(SegmentDataContainer segment,
-                int ptr,
-                int elementCount, int step,
-                int structDataSize, short structPointerCount,
-                int nestingLimit) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+        public Reader() {
         }
 
         public Stream<Data.Reader> stream() {
@@ -76,7 +73,7 @@ public final class DataList {
 
         @Override
         public boolean isEmpty() {
-            return elementCount==0;
+            return elementCount == 0;
         }
 
         @Override
@@ -128,7 +125,6 @@ public final class DataList {
         public void clear() {
             throw new UnsupportedOperationException("Unsupported");
         }
-
 
         public final class Iterator implements java.util.Iterator<Data.Reader> {
 
@@ -184,9 +180,11 @@ public final class DataList {
         }
 
         public final Reader asReader() {
-            return new Reader(this.segment, this.ptr, this.elementCount, this.step,
+            final Reader reader = new Reader();
+            reader.init(this.segment, this.ptr, this.elementCount, this.step,
                     this.structDataSize, this.structPointerCount,
                     java.lang.Integer.MAX_VALUE);
+            return reader;
         }
 
         public final class Iterator implements java.util.Iterator<Data.Builder> {
@@ -218,9 +216,10 @@ public final class DataList {
         public java.util.Iterator<Data.Builder> iterator() {
             return new Iterator(this);
         }
+
         @Override
         public boolean isEmpty() {
-            return elementCount==0;
+            return elementCount == 0;
         }
 
         @Override
@@ -272,8 +271,6 @@ public final class DataList {
         public void clear() {
             throw new UnsupportedOperationException("Unsupported");
         }
-
-
 
         @Override
         public String toString() {
