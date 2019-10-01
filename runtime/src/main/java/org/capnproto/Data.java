@@ -29,15 +29,24 @@ public final class Data {
             FromPointerBuilderBlobDefault<Builder>,
             SetPointerBuilder<Builder, Reader> {
 
+        private final static ThreadLocal<org.capnproto.Recycler<Reader>> CACHE = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+            @Override
+            protected org.capnproto.Recycler<Reader> initialValue() {
+                return new org.capnproto.Recycler<>(Reader::new);
+            }
+        };
+
         @Override
         public final Reader fromPointerReaderBlobDefault(SegmentDataContainer segment, int pointer, java.nio.ByteBuffer defaultBuffer,
                 int defaultOffset, int defaultSize) {
-            return WireHelpers.readDataPointer(segment, pointer, defaultBuffer, defaultOffset, defaultSize);
+            return WireHelpers.readDataPointer(segment,
+                    pointer, CACHE.get(),
+                    r -> r.init(defaultBuffer, defaultOffset, defaultSize));
         }
 
         @Override
         public final Reader fromPointerReader(SegmentDataContainer segment, int pointer, int nestingLimit) {
-            return WireHelpers.readDataPointer(segment, pointer, null, 0, 0);
+            return WireHelpers.readDataPointer(segment, pointer, CACHE.get(), Reader::init);
         }
 
         @Override
@@ -69,35 +78,75 @@ public final class Data {
     }
     public static final Factory factory = new Factory();
 
-    public static final class Reader {
+    public static final class Reader implements Recycable<Reader> {
 
-        public final ByteBuffer buffer;
-        public final int offset; // in bytes
-        public final int size; // in bytes
+        private boolean recycled;
+        private Recycler<Reader> recycler;
+        public ByteBuffer buffer;
+        public int offset; // in bytes
+        public int size; // in bytes
 
+        /**
+         * Used by the Recycler.
+         */
         public Reader() {
+            recycled = true;
+        }
+
+        /**
+         * Used by tests.
+         *
+         * @param buffer
+         * @param offset
+         * @param size
+         */
+        public Reader(ByteBuffer buffer, int offset, int size) {
+            init(buffer, offset, size);
+        }
+
+        /**
+         * Used in unit tests and builder.
+         *
+         * @param bytes The bytes wrapped by the Reader.
+         */
+        public Reader(byte[] bytes) {
+            init(bytes);
+        }
+
+        public final void init() {
             this.buffer = ByteBuffer.allocate(0);
             this.offset = 0;
             this.size = 0;
+            recycled = false;
         }
 
-        public Reader(ByteBuffer buffer, int offset, int size) {
-            this.buffer = buffer;
-            this.offset = offset * 8;
-            this.size = size;
+        public final void init(ByteBuffer buffer1, int offset1, int size1) {
+            this.buffer = buffer1;
+            this.offset = offset1 * 8;
+            this.size = size1;
+            this.recycled = false;
         }
 
-        public Reader(byte[] bytes) {
+        public final void init(byte[] bytes) {
             this.buffer = ByteBuffer.wrap(bytes);
             this.offset = 0;
             this.size = bytes.length;
+            this.recycled = false;
         }
 
         public final int size() {
+            checkRecycled();
             return this.size;
         }
 
+        private void checkRecycled() throws IllegalStateException {
+            if (recycled) {
+                throw new IllegalStateException("Reader is recycled.");
+            }
+        }
+
         public ByteBuffer asByteBuffer() {
+            checkRecycled();
             ByteBuffer dup = this.buffer.asReadOnlyBuffer();
             dup.position(this.offset);
             ByteBuffer result = dup.slice();
@@ -106,6 +155,7 @@ public final class Data {
         }
 
         public byte[] toArray() {
+            checkRecycled();
             ByteBuffer dup = this.buffer.duplicate();
             byte result[] = new byte[this.size];
             dup.position(this.offset);
@@ -115,7 +165,27 @@ public final class Data {
 
         @Override
         public String toString() {
+            checkRecycled();
             return "Data{" + new ByteBufferFormatter().format(asByteBuffer()) + '}';
+        }
+
+        @Override
+        public void init(Recycler<Reader> recycler) {
+            this.recycler = recycler;
+        }
+
+        @Override
+        public void recycle() {
+            if (recycled) {
+                throw new IllegalArgumentException("This reader is already recycled");
+            }
+            recycled = true;
+            this.buffer = null;
+            this.offset = 0;
+            this.size = 0;
+            if (recycler != null) {
+                recycler.recycle(this);
+            }
         }
 
     }

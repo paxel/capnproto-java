@@ -21,6 +21,7 @@
 package org.capnproto;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 final class WireHelpers {
 
@@ -1323,24 +1324,20 @@ final class WireHelpers {
         return new Text.Reader(resolved.segment.getBuffer(), resolved.ptr, size - 1);
     }
 
-    static Data.Reader readDataPointer(SegmentDataContainer segment,
-            int refOffset,
-            ByteBuffer defaultBuffer,
-            int defaultOffset,
-            int defaultSize) {
+    static Data.Reader readDataPointer(SegmentDataContainer segment, int refOffset, Recycler<Data.Reader> recycler, Consumer<Data.Reader> fallBackInit) {
         long ref = segment.get(refOffset);
 
         if (WirePointer.isNull(ref)) {
-            if (defaultBuffer == null) {
-                return new Data.Reader();
-            } else {
-                return new Data.Reader(defaultBuffer, defaultOffset, defaultSize);
-            }
+            Data.Reader fallBack = recycler.getOrCreate();
+            fallBackInit.accept(fallBack);
+            return fallBack;
         }
 
-        int refTarget = WirePointer.target(refOffset, ref);
+        FollowFarsResult resolved = followFars(ref, WirePointer.target(refOffset, ref), segment);
+        return readDataPointer(resolved, recycler);
+    }
 
-        FollowFarsResult resolved = followFars(ref, refTarget, segment);
+    private static Data.Reader readDataPointer(FollowFarsResult resolved, Recycler<Data.Reader> recycler) throws DecodeException {
 
         int size = ListPointer.elementCount(resolved.ref);
 
@@ -1354,7 +1351,9 @@ final class WireHelpers {
 
         resolved.segment.getArena().checkReadLimit(roundBytesUpToWords(size));
 
-        return new Data.Reader(resolved.segment.getBuffer(), resolved.ptr, size);
+        Data.Reader dataReader = recycler.getOrCreate();
+        dataReader.init(resolved.segment.getBuffer(), resolved.ptr, size);
+        return dataReader;
     }
 
 }
