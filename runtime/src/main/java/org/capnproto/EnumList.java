@@ -67,34 +67,41 @@ public class EnumList {
         }
     }
 
-    public static final class Reader<T extends java.lang.Enum> extends ListReader implements Collection<T> {
+    public static final class Reader<T extends java.lang.Enum> extends ListReader implements Collection<T>, Recycable<Reader<T>> {
 
         public T values[];
+        private Recycler<Reader<T>> recycler;
+        private boolean recycled;
 
         public Reader() {
         }
 
         public T get(int index) {
+            checkRecycled();
             return clampOrdinal(this.values, _getShortElement(index));
         }
 
         @Override
         public boolean isEmpty() {
+            checkRecycled();
             return elementCount == 0;
         }
 
         @Override
         public boolean contains(Object o) {
+            checkRecycled();
             return stream().anyMatch(o::equals);
         }
 
         @Override
         public Object[] toArray() {
+            checkRecycled();
             return stream().collect(Collectors.toList()).toArray();
         }
 
         @Override
         public <T> T[] toArray(T[] a) {
+            checkRecycled();
             return stream().collect(Collectors.toList()).toArray(a);
         }
 
@@ -110,6 +117,7 @@ public class EnumList {
 
         @Override
         public boolean containsAll(Collection<?> c) {
+            checkRecycled();
             return stream().collect(Collectors.toList()).containsAll(c);
         }
 
@@ -135,6 +143,7 @@ public class EnumList {
 
         @Override
         public Stream<T> stream() {
+            checkRecycled();
             return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                     Spliterator.SIZED & Spliterator.IMMUTABLE
             ), false);
@@ -167,8 +176,37 @@ public class EnumList {
 
         @Override
         public java.util.Iterator<T> iterator() {
+            checkRecycled();
             return new Iterator(this);
         }
+
+        @Override
+        public void init(Recycler<Reader<T>> recycler) {
+            this.recycler = recycler;
+        }
+
+        @Override
+        public void recycle() {
+            if (recycled) {
+                throw new IllegalArgumentException("This reader is already recycled");
+            }
+            super.deinit();
+            this.values = null;
+            if (recycler != null) {
+                recycler.recycle(this);
+            }
+        }
+
+        private void checkRecycled() throws IllegalStateException {
+            if (recycled) {
+                throw new IllegalStateException("Reader is recycled.");
+            }
+        }
+            @Override
+            protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                recycled = false;
+            }
 
         @Override
         public String toString() {

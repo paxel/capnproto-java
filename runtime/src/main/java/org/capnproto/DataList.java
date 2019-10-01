@@ -161,6 +161,12 @@ public final class DataList {
             }
         }
 
+        @Override
+        protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
+            super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+            recycled = false;
+        }
+
         public final class Iterator implements java.util.Iterator<Data.Reader> {
 
             public Reader list;

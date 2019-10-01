@@ -550,6 +550,12 @@ public class PrimitiveList {
             Factory() {
                 super(ElementSize.BYTE);
             }
+            private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+                @Override
+                protected org.capnproto.Recycler<Reader> initialValue() {
+                    return new org.capnproto.Recycler<>(Reader::new);
+                }
+            };
 
             @Override
             public final Reader constructReader(SegmentDataContainer segment,
@@ -557,7 +563,7 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                final Reader reader = new Reader();
+                final Reader reader = RECYCLER.get().getOrCreate();
                 reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 return reader;
             }
@@ -572,32 +578,37 @@ public class PrimitiveList {
         }
         public static final Factory factory = new Factory();
 
-        public static final class Reader extends ListReader implements Collection<java.lang.Byte> {
+        public static final class Reader extends ListReader implements Collection<java.lang.Byte>, Recycable<Reader> {
 
-            public Reader() {
-            }
+            private Recycler<Reader> recycler;
+            private boolean recycled;
 
             public byte get(int index) {
+                checkRecycled();
                 return _getByteElement(index);
             }
 
             @Override
             public boolean isEmpty() {
+                checkRecycled();
                 return elementCount == 0;
             }
 
             @Override
             public boolean contains(Object o) {
+                checkRecycled();
                 return stream().anyMatch(o::equals);
             }
 
             @Override
             public Object[] toArray() {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray();
             }
 
             @Override
             public <T> T[] toArray(T[] a) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray(a);
             }
 
@@ -637,6 +648,7 @@ public class PrimitiveList {
             }
 
             public Stream<java.lang.Byte> stream() {
+                checkRecycled();
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE
                 ), false);
@@ -669,12 +681,42 @@ public class PrimitiveList {
 
             @Override
             public java.util.Iterator<java.lang.Byte> iterator() {
+                checkRecycled();
                 return new Iterator(this);
             }
 
             @Override
             public String toString() {
+                checkRecycled();
                 return stream().map(String::valueOf).collect(Collectors.joining(","));
+            }
+
+            @Override
+            public void init(Recycler<Reader> recycler) {
+                this.recycler = recycler;
+            }
+
+            @Override
+            public void recycle() {
+                if (recycled) {
+                    throw new IllegalArgumentException("This reader is already recycled");
+                }
+                recycled = true;
+                if (recycler != null) {
+                    recycler.recycle(this);
+                }
+            }
+
+            private void checkRecycled() throws IllegalStateException {
+                if (recycled) {
+                    throw new IllegalStateException("Reader is recycled.");
+                }
+            }
+
+            @Override
+            protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                recycled = false;
             }
 
         }
@@ -809,6 +851,12 @@ public class PrimitiveList {
             Factory() {
                 super(ElementSize.TWO_BYTES);
             }
+            private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+                @Override
+                protected org.capnproto.Recycler<Reader> initialValue() {
+                    return new org.capnproto.Recycler<>(Reader::new);
+                }
+            };
 
             @Override
             public final Reader constructReader(SegmentDataContainer segment,
@@ -816,7 +864,7 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                final Reader reader = new Reader();
+                final Reader reader = RECYCLER.get().getOrCreate();
                 reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 return reader;
             }
@@ -832,32 +880,37 @@ public class PrimitiveList {
         }
         public static final Factory factory = new Factory();
 
-        public static final class Reader extends ListReader implements Collection<java.lang.Short> {
+        public static final class Reader extends ListReader implements Collection<java.lang.Short>, Recycable<Reader> {
 
-            public Reader() {
-            }
+            private Recycler<Reader> recycler;
+            private boolean recycled;
 
             public short get(int index) {
+                checkRecycled();
                 return _getShortElement(index);
             }
 
             @Override
             public boolean isEmpty() {
+                checkRecycled();
                 return elementCount == 0;
             }
 
             @Override
             public boolean contains(Object o) {
+                checkRecycled();
                 return stream().anyMatch(o::equals);
             }
 
             @Override
             public Object[] toArray() {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray();
             }
 
             @Override
             public <T> T[] toArray(T[] a) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray(a);
             }
 
@@ -873,6 +926,7 @@ public class PrimitiveList {
 
             @Override
             public boolean containsAll(Collection<?> c) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).containsAll(c);
             }
 
@@ -897,6 +951,7 @@ public class PrimitiveList {
             }
 
             public Stream<java.lang.Short> stream() {
+                checkRecycled();
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE
                 ), false);
@@ -929,12 +984,42 @@ public class PrimitiveList {
 
             @Override
             public java.util.Iterator<java.lang.Short> iterator() {
+                checkRecycled();
                 return new Iterator(this);
             }
 
             @Override
             public String toString() {
+                checkRecycled();
                 return stream().map(String::valueOf).collect(Collectors.joining(","));
+            }
+
+            @Override
+            public void init(Recycler<Reader> recycler) {
+                this.recycler = recycler;
+            }
+
+            @Override
+            public void recycle() {
+                if (recycled) {
+                    throw new IllegalArgumentException("This reader is already recycled");
+                }
+                recycled = true;
+                if (recycler != null) {
+                    recycler.recycle(this);
+                }
+            }
+
+            private void checkRecycled() throws IllegalStateException {
+                if (recycled) {
+                    throw new IllegalStateException("Reader is recycled.");
+                }
+            }
+
+            @Override
+            protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                recycled = false;
             }
 
         }
@@ -1069,6 +1154,12 @@ public class PrimitiveList {
             Factory() {
                 super(ElementSize.FOUR_BYTES);
             }
+            private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+                @Override
+                protected org.capnproto.Recycler<Reader> initialValue() {
+                    return new org.capnproto.Recycler<>(Reader::new);
+                }
+            };
 
             @Override
             public final Reader constructReader(SegmentDataContainer segment,
@@ -1076,7 +1167,7 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                final Reader reader = new Reader();
+                final Reader reader = RECYCLER.get().getOrCreate();
                 reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 return reader;
             }
@@ -1092,32 +1183,40 @@ public class PrimitiveList {
         }
         public static final Factory factory = new Factory();
 
-        public static final class Reader extends ListReader implements Collection<Integer> {
+        public static final class Reader extends ListReader implements Collection<Integer>, Recycable<Reader> {
+
+            private boolean recycled;
+            private Recycler<Reader> recycler;
 
             public Reader() {
             }
 
             public int get(int index) {
+                checkRecycled();
                 return _getIntElement(index);
             }
 
             @Override
             public boolean isEmpty() {
+                checkRecycled();
                 return elementCount == 0;
             }
 
             @Override
             public boolean contains(Object o) {
+                checkRecycled();
                 return stream().anyMatch(o::equals);
             }
 
             @Override
             public Object[] toArray() {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray();
             }
 
             @Override
             public <T> T[] toArray(T[] a) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray(a);
             }
 
@@ -1157,6 +1256,7 @@ public class PrimitiveList {
             }
 
             public Stream<Integer> stream() {
+                checkRecycled();
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE
                 ), false);
@@ -1189,12 +1289,42 @@ public class PrimitiveList {
 
             @Override
             public java.util.Iterator<Integer> iterator() {
+                checkRecycled();
                 return new Iterator(this);
             }
 
             @Override
             public String toString() {
+                checkRecycled();
                 return stream().map(String::valueOf).collect(Collectors.joining(","));
+            }
+
+            @Override
+            public void init(Recycler<Reader> recycler) {
+                this.recycler = recycler;
+            }
+
+            @Override
+            public void recycle() {
+                if (recycled) {
+                    throw new IllegalArgumentException("This reader is already recycled");
+                }
+                recycled = true;
+                if (recycler != null) {
+                    recycler.recycle(this);
+                }
+            }
+
+            private void checkRecycled() throws IllegalStateException {
+                if (recycled) {
+                    throw new IllegalStateException("Reader is recycled.");
+                }
+            }
+
+            @Override
+            protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                recycled = false;
             }
 
         }
@@ -1591,6 +1721,12 @@ public class PrimitiveList {
             Factory() {
                 super(ElementSize.EIGHT_BYTES);
             }
+            private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+                @Override
+                protected org.capnproto.Recycler<Reader> initialValue() {
+                    return new org.capnproto.Recycler<>(Reader::new);
+                }
+            };
 
             @Override
             public final Reader constructReader(SegmentDataContainer segment,
@@ -1598,7 +1734,7 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                final Reader reader = new Reader();
+                final Reader reader = RECYCLER.get().getOrCreate();
                 reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 return reader;
             }
@@ -1613,32 +1749,37 @@ public class PrimitiveList {
         }
         public static final Factory factory = new Factory();
 
-        public static final class Reader extends ListReader implements Collection<java.lang.Long> {
+        public static final class Reader extends ListReader implements Collection<java.lang.Long>, Recycable<Reader> {
 
-            public Reader() {
-            }
+            private boolean recycled;
+            private Recycler<Reader> recycler;
 
             public long get(int index) {
+                checkRecycled();
                 return _getLongElement(index);
             }
 
             @Override
             public boolean isEmpty() {
+                checkRecycled();
                 return elementCount == 0;
             }
 
             @Override
             public boolean contains(Object o) {
+                checkRecycled();
                 return stream().anyMatch(o::equals);
             }
 
             @Override
             public Object[] toArray() {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray();
             }
 
             @Override
             public <T> T[] toArray(T[] a) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray(a);
             }
 
@@ -1678,6 +1819,7 @@ public class PrimitiveList {
             }
 
             public Stream<java.lang.Long> stream() {
+                checkRecycled();
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE), false);
             }
@@ -1709,12 +1851,42 @@ public class PrimitiveList {
 
             @Override
             public java.util.Iterator<java.lang.Long> iterator() {
+                checkRecycled();
                 return new Iterator(this);
             }
 
             @Override
             public String toString() {
+                checkRecycled();
                 return stream().map(String::valueOf).collect(Collectors.joining(","));
+            }
+
+            @Override
+            public void init(Recycler<Reader> recycler) {
+                this.recycler = recycler;
+            }
+
+            @Override
+            public void recycle() {
+                if (recycled) {
+                    throw new IllegalArgumentException("This reader is already recycled");
+                }
+                recycled = true;
+                if (recycler != null) {
+                    recycler.recycle(this);
+                }
+            }
+
+            private void checkRecycled() throws IllegalStateException {
+                if (recycled) {
+                    throw new IllegalStateException("Reader is recycled.");
+                }
+            }
+
+            @Override
+            protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                recycled = false;
             }
 
         }
