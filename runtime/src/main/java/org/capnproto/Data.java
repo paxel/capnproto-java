@@ -29,7 +29,7 @@ public final class Data {
             FromPointerBuilderBlobDefault<Builder>,
             SetPointerBuilder<Builder, Reader> {
 
-        private final static ThreadLocal<org.capnproto.Recycler<Reader>> CACHE = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+        private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
             @Override
             protected org.capnproto.Recycler<Reader> initialValue() {
                 return new org.capnproto.Recycler<>(Reader::new);
@@ -40,13 +40,13 @@ public final class Data {
         public final Reader fromPointerReaderBlobDefault(SegmentDataContainer segment, int pointer, java.nio.ByteBuffer defaultBuffer,
                 int defaultOffset, int defaultSize) {
             return WireHelpers.readDataPointer(segment,
-                    pointer, CACHE.get(),
+                    pointer, RECYCLER.get(),
                     r -> r.init(defaultBuffer, defaultOffset, defaultSize));
         }
 
         @Override
         public final Reader fromPointerReader(SegmentDataContainer segment, int pointer, int nestingLimit) {
-            return WireHelpers.readDataPointer(segment, pointer, CACHE.get(), Reader::init);
+            return WireHelpers.readDataPointer(segment, pointer, RECYCLER.get(), Reader::init);
         }
 
         @Override
@@ -139,11 +139,6 @@ public final class Data {
             return this.size;
         }
 
-        private void checkRecycled() throws IllegalStateException {
-            if (recycled) {
-                throw new IllegalStateException("Reader is recycled.");
-            }
-        }
 
         public ByteBuffer asByteBuffer() {
             checkRecycled();
@@ -185,6 +180,11 @@ public final class Data {
             this.size = 0;
             if (recycler != null) {
                 recycler.recycle(this);
+            }
+        }
+        private void checkRecycled() throws IllegalStateException {
+            if (recycled) {
+                throw new IllegalStateException("Reader is recycled.");
             }
         }
 

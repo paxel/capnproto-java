@@ -40,6 +40,10 @@ public class ListReader {
     protected int nestingLimit;
 
     public ListReader() {
+        deinit();
+    }
+
+    final void deinit() {
         this.segment = null;
         this.ptr = 0;
         this.elementCount = 0;
@@ -47,6 +51,7 @@ public class ListReader {
         this.structDataSize = 0;
         this.structPointerCount = 0;
         this.nestingLimit = 0x7fff_ffff;
+
     }
 
     protected void init(SegmentDataContainer segment, int ptr,

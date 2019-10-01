@@ -34,6 +34,12 @@ public final class DataList {
         Factory() {
             super(ElementSize.POINTER);
         }
+        private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+            @Override
+            protected org.capnproto.Recycler<Reader> initialValue() {
+                return new org.capnproto.Recycler<>(Reader::new);
+            }
+        };
 
         @Override
         public final Reader constructReader(SegmentDataContainer segment,
@@ -41,7 +47,7 @@ public final class DataList {
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            final Reader reader = new Reader();
+            final Reader reader = RECYCLER.get().getOrCreate();
             reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
             return reader;
         }
@@ -56,38 +62,44 @@ public final class DataList {
     }
     public static final Factory factory = new Factory();
 
-    public static final class Reader extends ListReader implements Collection<Data.Reader> {
+    public static final class Reader extends ListReader implements Collection<Data.Reader>, Recycable<Reader> {
 
-        public Reader() {
-        }
+        private boolean recycled;
+        private Recycler<Reader> recycler;
 
         public Stream<Data.Reader> stream() {
+            checkRecycled();
             return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                     Spliterator.SIZED & Spliterator.IMMUTABLE
             ), false);
         }
 
         public Data.Reader get(int index) {
+            checkRecycled();
             return _getPointerElement(Data.factory, index);
         }
 
         @Override
         public boolean isEmpty() {
+            checkRecycled();
             return elementCount == 0;
         }
 
         @Override
         public boolean contains(Object o) {
+            checkRecycled();
             return stream().anyMatch(o::equals);
         }
 
         @Override
         public Object[] toArray() {
+            checkRecycled();
             return stream().collect(Collectors.toList()).toArray();
         }
 
         @Override
         public <T> T[] toArray(T[] a) {
+            checkRecycled();
             return stream().collect(Collectors.toList()).toArray(a);
         }
 
@@ -103,6 +115,7 @@ public final class DataList {
 
         @Override
         public boolean containsAll(Collection<?> c) {
+            checkRecycled();
             return stream().collect(Collectors.toList()).containsAll(c);
         }
 
@@ -124,6 +137,28 @@ public final class DataList {
         @Override
         public void clear() {
             throw new UnsupportedOperationException("Unsupported");
+        }
+
+        @Override
+        public void init(Recycler<Reader> recycler) {
+            this.recycler = recycler;
+        }
+
+        @Override
+        public void recycle() {
+            if (recycled) {
+                throw new IllegalArgumentException("This reader is already recycled");
+            }
+            super.deinit();
+            if (recycler != null) {
+                recycler.recycle(this);
+            }
+        }
+
+        private void checkRecycled() throws IllegalStateException {
+            if (recycled) {
+                throw new IllegalStateException("Reader is recycled.");
+            }
         }
 
         public final class Iterator implements java.util.Iterator<Data.Reader> {
@@ -153,11 +188,13 @@ public final class DataList {
 
         @Override
         public java.util.Iterator<Data.Reader> iterator() {
+            checkRecycled();
             return new Iterator(this);
         }
 
         @Override
         public String toString() {
+            checkRecycled();
             return stream().map(String::valueOf).collect(Collectors.joining(","));
         }
 

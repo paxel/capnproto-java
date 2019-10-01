@@ -969,8 +969,6 @@ final class WireHelpers {
         return allocation.segment;
     }
 
-    ;
-
     static GenericSegmentBuilder setListPointer(GenericSegmentBuilder segment, int refOffset, ListReader value) {
         int totalSize = roundBitsUpToWords(value.elementCount * value.step);
 
