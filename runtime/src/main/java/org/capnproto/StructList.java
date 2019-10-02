@@ -29,30 +29,37 @@ import java.util.stream.StreamSupport;
 
 public final class StructList {
 
-    public static final class Factory<ElementBuilder extends StructBuilder, ElementReader extends StructReader>
-            extends ListFactory<Builder<ElementBuilder>, Reader<ElementReader>> {
+    public static final class Factory<B extends StructBuilder, R extends StructReader>
+            extends ListFactory<Builder<B>, Reader<R>> {
 
-        public final StructFactory<ElementBuilder, ElementReader> factory;
+        public final StructFactory<B, R> factory;
 
-        public Factory(StructFactory<ElementBuilder, ElementReader> factory) {
+        private final static ThreadLocal<org.capnproto.Recycler> RECYCLER = new ThreadLocal<org.capnproto.Recycler>() {
+            @Override
+            protected org.capnproto.Recycler initialValue() {
+                return new org.capnproto.Recycler<>(Reader::new);
+            }
+        };
+
+        public Factory(StructFactory<B, R> factory) {
             super(ElementSize.INLINE_COMPOSITE);
             this.factory = factory;
         }
 
         @Override
-        public final Reader<ElementReader> constructReader(SegmentDataContainer segment,
+        public final Reader<R> constructReader(SegmentDataContainer segment,
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            final Reader<ElementReader> reader = new Reader<>();
+            final Reader<R> reader = (Reader<R>) RECYCLER.get().getOrCreate();
             reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
             reader.factory = this.factory;
             return reader;
         }
 
         @Override
-        public final Builder<ElementBuilder> constructBuilder(GenericSegmentBuilder segment,
+        public final Builder<B> constructBuilder(GenericSegmentBuilder segment,
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount) {
@@ -60,7 +67,7 @@ public final class StructList {
         }
 
         @Override
-        public final Builder<ElementBuilder> fromPointerBuilderRefDefault(GenericSegmentBuilder segment, int pointer,
+        public final Builder<B> fromPointerBuilderRefDefault(GenericSegmentBuilder segment, int pointer,
                 SegmentDataContainer defaultSegment, int defaultOffset) {
             return WireHelpers.getWritableStructListPointer(this,
                     pointer,
@@ -71,7 +78,7 @@ public final class StructList {
         }
 
         @Override
-        public final Builder<ElementBuilder> fromPointerBuilder(GenericSegmentBuilder segment, int pointer) {
+        public final Builder<B> fromPointerBuilder(GenericSegmentBuilder segment, int pointer) {
             return WireHelpers.getWritableStructListPointer(this,
                     pointer,
                     segment,
@@ -80,46 +87,58 @@ public final class StructList {
         }
 
         @Override
-        public final Builder<ElementBuilder> initFromPointerBuilder(GenericSegmentBuilder segment, int pointer,
+        public final Builder<B> initFromPointerBuilder(GenericSegmentBuilder segment, int pointer,
                 int elementCount) {
             return WireHelpers.initStructListPointer(this, pointer, segment, elementCount, factory.structSize());
         }
     }
 
-    public static final class Reader<T> extends ListReader implements Collection<T> {
+    public static final class Reader<T> extends ListReader implements Collection<T>, Recycable<Reader<T>> {
 
         public StructReader.Factory<T> factory;
+        private Recycler<Reader<T>> recycler;
+        private boolean recycled;
 
-        public Reader() {
+        @Override
+        protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
+            super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            recycled = false;
         }
 
+        @Override
         public Stream<T> stream() {
+            checkRecycled();
             return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                     Spliterator.SIZED & Spliterator.IMMUTABLE
             ), false);
         }
 
         public T get(int index) {
+            checkRecycled();
             return _getStructElement(factory, index);
         }
 
         @Override
         public boolean isEmpty() {
+            checkRecycled();
             return elementCount == 0;
         }
 
         @Override
         public boolean contains(Object o) {
+            checkRecycled();
             return stream().anyMatch(o::equals);
         }
 
         @Override
         public Object[] toArray() {
+            checkRecycled();
             return stream().collect(Collectors.toList()).toArray();
         }
 
         @Override
         public <T> T[] toArray(T[] a) {
+            checkRecycled();
             return stream().collect(Collectors.toList()).toArray(a);
         }
 
@@ -135,6 +154,7 @@ public final class StructList {
 
         @Override
         public boolean containsAll(Collection<?> c) {
+            checkRecycled();
             return stream().collect(Collectors.toList()).containsAll(c);
         }
 
@@ -185,13 +205,38 @@ public final class StructList {
 
         @Override
         public java.util.Iterator<T> iterator() {
+            checkRecycled();
             return new Iterator(this);
         }
 
         @Override
         public String toString() {
+            checkRecycled();
             return stream().map(String::valueOf).collect(Collectors.joining(","));
         }
+
+        @Override
+        public void init(Recycler<Reader<T>> recycler) {
+            this.recycler = recycler;
+        }
+
+        @Override
+        public void recycle() {
+            if (recycled) {
+                throw new IllegalArgumentException("This reader is already recycled");
+            }
+            recycled = true;
+            if (recycler != null) {
+                recycler.recycle(this);
+            }
+        }
+
+        private void checkRecycled() throws IllegalStateException {
+            if (recycled) {
+                throw new IllegalStateException("Reader is recycled.");
+            }
+        }
+
     }
 
     public static final class Builder<T extends StructBuilder> extends ListBuilder implements Collection<T> {
@@ -216,7 +261,7 @@ public final class StructList {
          * source struct is larger than the target struct (as can happen if it
          * was created with a newer version of the schema), then it will be
          * truncated, losing fields.
-         *
+         * <p>
          * TODO: rework generics, so that we don't need this factory parameter
          */
         public final <U extends StructReader> void setWithCaveats(StructFactory<T, U> factory,
