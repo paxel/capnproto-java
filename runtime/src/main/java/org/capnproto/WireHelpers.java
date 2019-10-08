@@ -223,7 +223,7 @@ final class WireHelpers {
         }
     }
 
-    static void followFars(long ref, int refTarget, SegmentDataContainer segment, FollowFarsResult result) {
+    static FollowFarsResult followFars(long ref, int refTarget, SegmentDataContainer segment) {
         //# If the segment is null, this is an unchecked message,
         //# so there are no FAR pointers.
         if (segment != null && WirePointer.kind(ref) == WirePointer.FAR) {
@@ -236,7 +236,9 @@ final class WireHelpers {
 
             if (!FarPointer.isDoubleFar(ref)) {
 
+                FollowFarsResult result = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
                 result.init(WirePointer.target(padOffset, pad), pad, resultSegment);
+                return result;
             } else {
                 //# Landing pad is another far pointer. It is
                 //# followed by a tag describing the pointed-to
@@ -244,10 +246,14 @@ final class WireHelpers {
 
                 long tag = resultSegment.get(padOffset + 1);
                 resultSegment = resultSegment.getArena().tryGetSegment(FarPointer.getSegmentId(pad));
+                FollowFarsResult result = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
                 result.init(FarPointer.positionInSegment(pad), tag, resultSegment);
+                return result;
             }
         } else {
+            FollowFarsResult result = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
             result.init(refTarget, ref, segment);
+            return result;
         }
     }
 
@@ -950,18 +956,18 @@ final class WireHelpers {
 
         int refTarget = WirePointer.target(refOffset, ref);
         FollowBuilderFarsResult resolved = followBuilderFars(ref, refTarget, segment);
+        final long ref1 = resolved.ref;
+        final int ptr = resolved.ptr;
+        final GenericSegmentBuilder segment1 = resolved.segment;
 
-        if (WirePointer.kind(resolved.ref) != WirePointer.LIST) {
+        if (WirePointer.kind(ref1) != WirePointer.LIST) {
             throw new DecodeException("Called getData{Field,Element} but existing pointer is not a list.");
         }
-        if (ListPointer.elementSize(resolved.ref) != ElementSize.BYTE) {
-            throw new DecodeException(
-                    "Called getData{Field,Element} but existing list pointer is not byte-sized.");
+        if (ListPointer.elementSize(ref1) != ElementSize.BYTE) {
+            throw new DecodeException("Called getData{Field,Element} but existing list pointer is not byte-sized.");
         }
 
-        return new Data.Builder(resolved.segment.getBuffer(), resolved.ptr * Constants.BYTES_PER_WORD,
-                ListPointer.elementCount(resolved.ref));
-
+        return new Data.Builder(segment1.getBuffer(), ptr * Constants.BYTES_PER_WORD, ListPointer.elementCount(ref1));
     }
 
     static <T> T readStructPointer(StructReader.Factory<T> factory,
@@ -987,8 +993,7 @@ final class WireHelpers {
 
         int refTarget = WirePointer.target(refOffset, ref);
         // use a Threadlocal recycler for the far results to safely avoid generating billions of instances
-        FollowFarsResult ownedFollowFarsResult = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
-        followFars(ref, refTarget, segment, ownedFollowFarsResult);
+        FollowFarsResult ownedFollowFarsResult = followFars(ref, refTarget, segment);
         final long farRef = ownedFollowFarsResult.ref;
         final SegmentDataContainer farSegment = ownedFollowFarsResult.segment;
         final int farPtr = ownedFollowFarsResult.ptr;
@@ -1137,8 +1142,7 @@ final class WireHelpers {
         int srcTarget = WirePointer.target(srcOffset, srcRef);
 
         // use a Threadlocal recycler for the far results to safely avoid generating billions of instances
-        FollowFarsResult ownedFollowFarsResult = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
-        followFars(srcRef, srcTarget, srcSegment, ownedFollowFarsResult);
+        FollowFarsResult ownedFollowFarsResult = followFars(srcRef, srcTarget, srcSegment);
         final long farRef = ownedFollowFarsResult.ref;
         final SegmentDataContainer farSegment = ownedFollowFarsResult.segment;
         final int farPtr = ownedFollowFarsResult.ptr;
@@ -1256,8 +1260,7 @@ final class WireHelpers {
         int refTarget = WirePointer.target(refOffset, ref);
 
         // use a Threadlocal recycler for the far results to safely avoid generating billions of instances
-        FollowFarsResult ownedFollowFarsResult = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
-        followFars(ref, refTarget, segment, ownedFollowFarsResult);
+        FollowFarsResult ownedFollowFarsResult = followFars(ref, refTarget, segment);
         final long farRef = ownedFollowFarsResult.ref;
         final SegmentDataContainer farSegment = ownedFollowFarsResult.segment;
         final int farPtr = ownedFollowFarsResult.ptr;
@@ -1364,8 +1367,7 @@ final class WireHelpers {
         int refTarget = WirePointer.target(refOffset, ref);
 
         // use a Threadlocal recycler for the far results to safely avoid generating billions of instances
-        FollowFarsResult ownedFollowFarsResult = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
-        followFars(ref, refTarget, segment, ownedFollowFarsResult);
+        FollowFarsResult ownedFollowFarsResult = followFars(ref, refTarget, segment);
         final long farRef = ownedFollowFarsResult.ref;
         final SegmentDataContainer farSegment = ownedFollowFarsResult.segment;
         final int farPtr = ownedFollowFarsResult.ptr;
@@ -1400,9 +1402,7 @@ final class WireHelpers {
             return fallBack;
         }
 
-        FollowFarsResult ownedFollowFarsResult = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
-
-        followFars(ref, WirePointer.target(refOffset, ref), segment, ownedFollowFarsResult);
+        FollowFarsResult ownedFollowFarsResult = followFars(ref, WirePointer.target(refOffset, ref), segment);
         final Data.Reader result = readDataPointer(ownedFollowFarsResult, recycler);
         ownedFollowFarsResult.recycle();
         return result;
