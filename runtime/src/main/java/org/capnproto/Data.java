@@ -24,6 +24,8 @@ import java.nio.ByteBuffer;
 
 public final class Data {
 
+    private static final ByteBuffer EMPTY = ByteBuffer.allocate(0);
+
     public static final class Factory implements FromPointerReaderBlobDefault<Reader>,
             PointerFactory<Builder, Reader>,
             FromPointerBuilderBlobDefault<Builder>,
@@ -114,7 +116,7 @@ public final class Data {
         }
 
         public final void init() {
-            this.buffer = ByteBuffer.allocate(0);
+            this.buffer = EMPTY;
             this.offset = 0;
             this.size = 0;
             recycled = false;
@@ -138,7 +140,6 @@ public final class Data {
             checkRecycled();
             return this.size;
         }
-
 
         public ByteBuffer asByteBuffer() {
             checkRecycled();
@@ -182,6 +183,7 @@ public final class Data {
                 recycler.recycle(this);
             }
         }
+
         private void checkRecycled() throws IllegalStateException {
             if (recycled) {
                 throw new IllegalStateException("Reader is recycled.");

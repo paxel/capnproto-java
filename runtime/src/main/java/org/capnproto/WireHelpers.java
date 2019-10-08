@@ -25,6 +25,13 @@ import java.util.function.Consumer;
 
 final class WireHelpers {
 
+    private final static ThreadLocal<org.capnproto.Recycler<FollowFarsResult>> FAR_RESULT_RECYLCER = new ThreadLocal<org.capnproto.Recycler<FollowFarsResult>>() {
+        @Override
+        protected org.capnproto.Recycler<FollowFarsResult> initialValue() {
+            return new org.capnproto.Recycler<>(FollowFarsResult::new);
+        }
+    };
+
     static int roundBytesUpToWords(int bytes) {
         return (bytes + 7) / 8;
     }
@@ -144,20 +151,40 @@ final class WireHelpers {
         }
     }
 
-    static class FollowFarsResult {
+    static class FollowFarsResult implements Recycable<FollowFarsResult> {
 
-        public final int ptr;
-        public final long ref;
-        public final SegmentDataContainer segment;
+        public int ptr;
+        public long ref;
+        public SegmentDataContainer segment;
+        private boolean recycled;
+        private Recycler<FollowFarsResult> recycler;
 
-        FollowFarsResult(int ptr, long ref, SegmentDataContainer segment) {
+        @Override
+        public void init(Recycler<FollowFarsResult> recycler) {
+            this.recycler = recycler;
+        }
+
+        @Override
+        public void recycle() {
+            if (recycled) {
+                throw new IllegalStateException("Already recycled");
+            }
+            recycled = true;
+            ptr = 0;
+            ref = 0;
+            segment = null;
+            recycler.recycle(this);
+        }
+
+        private void init(int ptr, long ref, SegmentDataContainer segment) {
+            recycled = false;
             this.ptr = ptr;
             this.ref = ref;
             this.segment = segment;
         }
     }
 
-    static FollowFarsResult followFars(long ref, int refTarget, SegmentDataContainer segment) {
+    static void followFars(long ref, int refTarget, SegmentDataContainer segment, FollowFarsResult result) {
         //# If the segment is null, this is an unchecked message,
         //# so there are no FAR pointers.
         if (segment != null && WirePointer.kind(ref) == WirePointer.FAR) {
@@ -170,8 +197,7 @@ final class WireHelpers {
 
             if (!FarPointer.isDoubleFar(ref)) {
 
-                return new FollowFarsResult(WirePointer.target(padOffset, pad),
-                        pad, resultSegment);
+                result.init(WirePointer.target(padOffset, pad), pad, resultSegment);
             } else {
                 //# Landing pad is another far pointer. It is
                 //# followed by a tag describing the pointed-to
@@ -179,10 +205,10 @@ final class WireHelpers {
 
                 long tag = resultSegment.get(padOffset + 1);
                 resultSegment = resultSegment.getArena().tryGetSegment(FarPointer.getSegmentId(pad));
-                return new FollowFarsResult(FarPointer.positionInSegment(pad), tag, resultSegment);
+                result.init(FarPointer.positionInSegment(pad), tag, resultSegment);
             }
         } else {
-            return new FollowFarsResult(refTarget, ref, segment);
+            result.init(refTarget, ref, segment);
         }
     }
 
@@ -927,21 +953,28 @@ final class WireHelpers {
         }
 
         int refTarget = WirePointer.target(refOffset, ref);
-        FollowFarsResult resolved = followFars(ref, refTarget, segment);
+        // use a Threadlocal recycler for the far results to safely avoid generating billions of instances
+        FollowFarsResult ownedFollowFarsResult = FAR_RESULT_RECYLCER.get().getOrCreate();
+        followFars(ref, refTarget, segment, ownedFollowFarsResult);
+        final long farRef = ownedFollowFarsResult.ref;
+        final SegmentDataContainer farSegment = ownedFollowFarsResult.segment;
+        final int farPtr = ownedFollowFarsResult.ptr;
+        ownedFollowFarsResult.recycle();
+        ownedFollowFarsResult = null;
 
-        int dataSizeWords = StructPointer.dataSize(resolved.ref);
+        int dataSizeWords = StructPointer.dataSize(farRef);
 
-        if (WirePointer.kind(resolved.ref) != WirePointer.STRUCT) {
+        if (WirePointer.kind(farRef) != WirePointer.STRUCT) {
             throw new DecodeException("Message contains non-struct pointer where struct pointer was expected.");
         }
 
-        resolved.segment.getArena().checkReadLimit(StructPointer.wordSize(resolved.ref));
+        farSegment.getArena().checkReadLimit(StructPointer.wordSize(farRef));
 
-        return factory.constructReader(resolved.segment,
-                resolved.ptr * Constants.BYTES_PER_WORD,
-                (resolved.ptr + dataSizeWords),
+        return factory.constructReader(farSegment,
+                farPtr * Constants.BYTES_PER_WORD,
+                (farPtr + dataSizeWords),
                 dataSizeWords * Constants.BITS_PER_WORD,
-                StructPointer.ptrCount(resolved.ref),
+                StructPointer.ptrCount(farRef),
                 nestingLimit - 1);
 
     }
@@ -1091,32 +1124,40 @@ final class WireHelpers {
         }
 
         int srcTarget = WirePointer.target(srcOffset, srcRef);
-        FollowFarsResult resolved = followFars(srcRef, srcTarget, srcSegment);
 
-        switch (WirePointer.kind(resolved.ref)) {
+        // use a Threadlocal recycler for the far results to safely avoid generating billions of instances
+        FollowFarsResult ownedFollowFarsResult = FAR_RESULT_RECYLCER.get().getOrCreate();
+        followFars(srcRef, srcTarget, srcSegment, ownedFollowFarsResult);
+        final long farRef = ownedFollowFarsResult.ref;
+        final SegmentDataContainer farSegment = ownedFollowFarsResult.segment;
+        final int farPtr = ownedFollowFarsResult.ptr;
+        ownedFollowFarsResult.recycle();
+        ownedFollowFarsResult = null;
+
+        switch (WirePointer.kind(farRef)) {
             case WirePointer.STRUCT:
                 if (nestingLimit <= 0) {
                     throw new DecodeException("Message is too deeply nested or contains cycles. See org.capnproto.ReaderOptions.");
                 }
-                resolved.segment.getArena().checkReadLimit(StructPointer.wordSize(resolved.ref));
+                farSegment.getArena().checkReadLimit(StructPointer.wordSize(farRef));
                 return setStructPointer(dstSegment, dstOffset,
-                        new StructReader(resolved.segment,
-                                resolved.ptr * Constants.BYTES_PER_WORD,
-                                resolved.ptr + StructPointer.dataSize(resolved.ref),
-                                StructPointer.dataSize(resolved.ref) * Constants.BITS_PER_WORD,
-                                StructPointer.ptrCount(resolved.ref),
+                        new StructReader(farSegment,
+                                farPtr * Constants.BYTES_PER_WORD,
+                                farPtr + StructPointer.dataSize(farRef),
+                                StructPointer.dataSize(farRef) * Constants.BITS_PER_WORD,
+                                StructPointer.ptrCount(farRef),
                                 nestingLimit - 1));
             case WirePointer.LIST:
-                byte elementSize = ListPointer.elementSize(resolved.ref);
+                byte elementSize = ListPointer.elementSize(farRef);
                 if (nestingLimit <= 0) {
                     throw new DecodeException("Message is too deeply nested or contains cycles. See org.capnproto.ReaderOptions.");
                 }
                 if (elementSize == ElementSize.INLINE_COMPOSITE) {
-                    int wordCount = ListPointer.inlineCompositeWordCount(resolved.ref);
-                    long tag = resolved.segment.get(resolved.ptr);
-                    int ptr = resolved.ptr + 1;
+                    int wordCount = ListPointer.inlineCompositeWordCount(farRef);
+                    long tag = farSegment.get(farPtr);
+                    int ptr = farPtr + 1;
 
-                    resolved.segment.getArena().checkReadLimit(wordCount + 1);
+                    farSegment.getArena().checkReadLimit(wordCount + 1);
 
                     if (WirePointer.kind(tag) != WirePointer.STRUCT) {
                         throw new DecodeException("INLINE_COMPOSITE lists of non-STRUCT type are not supported.");
@@ -1131,11 +1172,11 @@ final class WireHelpers {
                     if (wordsPerElement == 0) {
                         // Watch out for lists of zero-sized structs, which can claim to be arbitrarily
                         // large without having sent actual data.
-                        resolved.segment.getArena().checkReadLimit(elementCount);
+                        farSegment.getArena().checkReadLimit(elementCount);
                     }
 
                     ListReader listReader = new ListReader();
-                    listReader.init(resolved.segment,
+                    listReader.init(farSegment,
                             ptr * Constants.BYTES_PER_WORD,
                             elementCount,
                             wordsPerElement * Constants.BITS_PER_WORD,
@@ -1147,20 +1188,20 @@ final class WireHelpers {
                     int dataSize = ElementSize.dataBitsPerElement(elementSize);
                     short pointerCount = ElementSize.pointersPerElement(elementSize);
                     int step = dataSize + pointerCount * Constants.BITS_PER_POINTER;
-                    int elementCount = ListPointer.elementCount(resolved.ref);
+                    int elementCount = ListPointer.elementCount(farRef);
                     int wordCount = roundBitsUpToWords((long) elementCount * step);
 
-                    resolved.segment.getArena().checkReadLimit(wordCount);
+                    farSegment.getArena().checkReadLimit(wordCount);
 
                     if (elementSize == ElementSize.VOID) {
                         // Watch out for lists of void, which can claim to be arbitrarily large without
                         // having sent actual data.
-                        resolved.segment.getArena().checkReadLimit(elementCount);
+                        farSegment.getArena().checkReadLimit(elementCount);
                     }
 
                     ListReader listReader = new ListReader();
-                    listReader.init(resolved.segment,
-                            resolved.ptr * Constants.BYTES_PER_WORD,
+                    listReader.init(farSegment,
+                            farPtr * Constants.BYTES_PER_WORD,
                             elementCount,
                             step,
                             dataSize,
@@ -1203,17 +1244,24 @@ final class WireHelpers {
 
         int refTarget = WirePointer.target(refOffset, ref);
 
-        FollowFarsResult resolved = followFars(ref, refTarget, segment);
+        // use a Threadlocal recycler for the far results to safely avoid generating billions of instances
+        FollowFarsResult ownedFollowFarsResult = FAR_RESULT_RECYLCER.get().getOrCreate();
+        followFars(ref, refTarget, segment, ownedFollowFarsResult);
+        final long farRef = ownedFollowFarsResult.ref;
+        final SegmentDataContainer farSegment = ownedFollowFarsResult.segment;
+        final int farPtr = ownedFollowFarsResult.ptr;
+        ownedFollowFarsResult.recycle();
+        ownedFollowFarsResult = null;
 
-        byte elementSize = ListPointer.elementSize(resolved.ref);
+        byte elementSize = ListPointer.elementSize(farRef);
         switch (elementSize) {
             case ElementSize.INLINE_COMPOSITE: {
-                int wordCount = ListPointer.inlineCompositeWordCount(resolved.ref);
+                int wordCount = ListPointer.inlineCompositeWordCount(farRef);
 
-                long tag = resolved.segment.get(resolved.ptr);
-                int ptr = resolved.ptr + 1;
+                long tag = farSegment.get(farPtr);
+                int ptr = farPtr + 1;
 
-                resolved.segment.getArena().checkReadLimit(wordCount + 1);
+                farSegment.getArena().checkReadLimit(wordCount + 1);
 
                 int size = WirePointer.inlineCompositeListElementCount(tag);
 
@@ -1226,11 +1274,11 @@ final class WireHelpers {
                 if (wordsPerElement == 0) {
                     // Watch out for lists of zero-sized structs, which can claim to be arbitrarily
                     // large without having sent actual data.
-                    resolved.segment.getArena().checkReadLimit(size);
+                    farSegment.getArena().checkReadLimit(size);
                 }
 
                 // TODO check whether the size is compatible
-                return factory.constructReader(resolved.segment,
+                return factory.constructReader(farSegment,
                         ptr * Constants.BYTES_PER_WORD,
                         size,
                         wordsPerElement * Constants.BITS_PER_WORD,
@@ -1243,18 +1291,18 @@ final class WireHelpers {
                 //# lists can also be interpreted as struct lists. We
                 //# need to compute the data size and pointer count for
                 //# such structs.
-                int dataSize = ElementSize.dataBitsPerElement(ListPointer.elementSize(resolved.ref));
-                int pointerCount = ElementSize.pointersPerElement(ListPointer.elementSize(resolved.ref));
-                int elementCount = ListPointer.elementCount(resolved.ref);
+                int dataSize = ElementSize.dataBitsPerElement(ListPointer.elementSize(farRef));
+                int pointerCount = ElementSize.pointersPerElement(ListPointer.elementSize(farRef));
+                int elementCount = ListPointer.elementCount(farRef);
                 int step = dataSize + pointerCount * Constants.BITS_PER_POINTER;
 
-                resolved.segment.getArena().checkReadLimit(
+                farSegment.getArena().checkReadLimit(
                         roundBitsUpToWords(elementCount * step));
 
                 if (elementSize == ElementSize.VOID) {
                     // Watch out for lists of void, which can claim to be arbitrarily large without
                     // having sent actual data.
-                    resolved.segment.getArena().checkReadLimit(elementCount);
+                    farSegment.getArena().checkReadLimit(elementCount);
                 }
 
                 //# Verify that the elements are at least as large as
@@ -1274,14 +1322,15 @@ final class WireHelpers {
                 if (expectedPointersPerElement > pointerCount) {
                     throw new DecodeException("Message contains list with incompatible element type.");
                 }
-
-                return factory.constructReader(resolved.segment,
-                        resolved.ptr * Constants.BYTES_PER_WORD,
-                        ListPointer.elementCount(resolved.ref),
+                final T result = factory.constructReader(farSegment,
+                        farPtr * Constants.BYTES_PER_WORD,
+                        ListPointer.elementCount(farRef),
                         step,
                         dataSize,
                         (short) pointerCount,
                         nestingLimit - 1);
+
+                return result;
             }
         }
     }
@@ -1303,25 +1352,32 @@ final class WireHelpers {
 
         int refTarget = WirePointer.target(refOffset, ref);
 
-        FollowFarsResult resolved = followFars(ref, refTarget, segment);
+        // use a Threadlocal recycler for the far results to safely avoid generating billions of instances
+        FollowFarsResult ownedFollowFarsResult = FAR_RESULT_RECYLCER.get().getOrCreate();
+        followFars(ref, refTarget, segment, ownedFollowFarsResult);
+        final long farRef = ownedFollowFarsResult.ref;
+        final SegmentDataContainer farSegment = ownedFollowFarsResult.segment;
+        final int farPtr = ownedFollowFarsResult.ptr;
+        ownedFollowFarsResult.recycle();
+        ownedFollowFarsResult = null;
 
-        int size = ListPointer.elementCount(resolved.ref);
+        int size = ListPointer.elementCount(farRef);
 
-        if (WirePointer.kind(resolved.ref) != WirePointer.LIST) {
+        if (WirePointer.kind(farRef) != WirePointer.LIST) {
             throw new DecodeException("Message contains non-list pointer where text was expected.");
         }
 
-        if (ListPointer.elementSize(resolved.ref) != ElementSize.BYTE) {
+        if (ListPointer.elementSize(farRef) != ElementSize.BYTE) {
             throw new DecodeException("Message contains list pointer of non-bytes where text was expected.");
         }
 
-        resolved.segment.getArena().checkReadLimit(roundBytesUpToWords(size));
+        farSegment.getArena().checkReadLimit(roundBytesUpToWords(size));
 
-        if (size == 0 || resolved.segment.getBuffer().get(8 * resolved.ptr + size - 1) != 0) {
+        if (size == 0 || farSegment.getBuffer().get(8 * farPtr + size - 1) != 0) {
             throw new DecodeException("Message contains text that is not NUL-terminated.");
         }
-
-        return new Text.Reader(resolved.segment.getBuffer(), resolved.ptr, size - 1);
+        final Text.Reader reader = new Text.Reader(farSegment.getBuffer(), farPtr, size - 1);
+        return reader;
     }
 
     static Data.Reader readDataPointer(SegmentDataContainer segment, int refOffset, Recycler<Data.Reader> recycler, Consumer<Data.Reader> fallBackInit) {
@@ -1333,26 +1389,30 @@ final class WireHelpers {
             return fallBack;
         }
 
-        FollowFarsResult resolved = followFars(ref, WirePointer.target(refOffset, ref), segment);
-        return readDataPointer(resolved, recycler);
+        FollowFarsResult ownedFollowFarsResult = FAR_RESULT_RECYLCER.get().getOrCreate();
+
+        followFars(ref, WirePointer.target(refOffset, ref), segment, ownedFollowFarsResult);
+        final Data.Reader result = readDataPointer(ownedFollowFarsResult, recycler);
+        ownedFollowFarsResult.recycle();
+        return result;
     }
 
-    private static Data.Reader readDataPointer(FollowFarsResult resolved, Recycler<Data.Reader> recycler) throws DecodeException {
+    private static Data.Reader readDataPointer(FollowFarsResult borrowedFollowFarsResult, Recycler<Data.Reader> recycler) throws DecodeException {
 
-        int size = ListPointer.elementCount(resolved.ref);
+        int size = ListPointer.elementCount(borrowedFollowFarsResult.ref);
 
-        if (WirePointer.kind(resolved.ref) != WirePointer.LIST) {
+        if (WirePointer.kind(borrowedFollowFarsResult.ref) != WirePointer.LIST) {
             throw new DecodeException("Message contains non-list pointer where data was expected.");
         }
 
-        if (ListPointer.elementSize(resolved.ref) != ElementSize.BYTE) {
+        if (ListPointer.elementSize(borrowedFollowFarsResult.ref) != ElementSize.BYTE) {
             throw new DecodeException("Message contains list pointer of non-bytes where data was expected.");
         }
 
-        resolved.segment.getArena().checkReadLimit(roundBytesUpToWords(size));
+        borrowedFollowFarsResult.segment.getArena().checkReadLimit(roundBytesUpToWords(size));
 
         Data.Reader dataReader = recycler.getOrCreate();
-        dataReader.init(resolved.segment.getBuffer(), resolved.ptr, size);
+        dataReader.init(borrowedFollowFarsResult.segment.getBuffer(), borrowedFollowFarsResult.ptr, size);
         return dataReader;
     }
 
