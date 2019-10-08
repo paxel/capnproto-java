@@ -25,10 +25,17 @@ import java.util.function.Consumer;
 
 final class WireHelpers {
 
-    private final static ThreadLocal<org.capnproto.Recycler<FollowFarsResult>> FAR_RESULT_RECYLCER = new ThreadLocal<org.capnproto.Recycler<FollowFarsResult>>() {
+    private final static ThreadLocal<org.capnproto.Recycler<FollowFarsResult>> FOLLOW_FARS_RESULT_RECYLCER = new ThreadLocal<org.capnproto.Recycler<FollowFarsResult>>() {
         @Override
         protected org.capnproto.Recycler<FollowFarsResult> initialValue() {
             return new org.capnproto.Recycler<>(FollowFarsResult::new);
+        }
+    };
+
+    private final static ThreadLocal<org.capnproto.Recycler<AllocateResult>> ALLOCATE_RESULT_RECYLCER = new ThreadLocal<org.capnproto.Recycler<AllocateResult>>() {
+        @Override
+        protected org.capnproto.Recycler<AllocateResult> initialValue() {
+            return new org.capnproto.Recycler<>(AllocateResult::new);
         }
     };
 
@@ -45,23 +52,50 @@ final class WireHelpers {
         return (int) ((bits + 63) / ((long) Constants.BITS_PER_WORD));
     }
 
-    static class AllocateResult {
+    static class AllocateResult implements Recycable<AllocateResult> {
 
-        public final int ptr;
-        public final int refOffset;
-        public final GenericSegmentBuilder segment;
+        public int ptr;
+        public int refOffset;
+        public GenericSegmentBuilder segment;
 
-        AllocateResult(int ptr, int refOffset, GenericSegmentBuilder segment) {
+        private Recycler<AllocateResult> recycler;
+        private boolean recycled;
+
+        @Override
+        public void init(Recycler<AllocateResult> recycler) {
+            this.recycler = recycler;
+        }
+
+        @Override
+        public void recycle() {
+            if (recycled) {
+                throw new IllegalStateException("Already recycled");
+            }
+            recycled = true;
+            ptr = 0;
+            refOffset = 0;
+            segment = null;
+            recycler.recycle(this);
+        }
+
+        void init(int ptr, int refOffset, GenericSegmentBuilder segment) {
+            recycled = false;
             this.ptr = ptr;
             this.refOffset = refOffset;
             this.segment = segment;
         }
     }
 
-    static AllocateResult allocate(int refOffset,
-            GenericSegmentBuilder segment,
-            int amount, // in words
-            byte kind) {
+    /**
+     *
+     * @param refOffset
+     * @param segment
+     * @param amount    in words
+     * @param kind
+     *
+     * @return
+     */
+    static AllocateResult allocate(int refOffset, GenericSegmentBuilder segment, int amount, byte kind) {
 
         long ref = segment.get(refOffset);
         if (!WirePointer.isNull(ref)) {
@@ -70,7 +104,9 @@ final class WireHelpers {
 
         if (amount == 0 && kind == WirePointer.STRUCT) {
             WirePointer.setKindAndTargetForEmptyStruct(segment.getBuffer(), refOffset);
-            return new AllocateResult(refOffset, refOffset, segment);
+            AllocateResult result = ALLOCATE_RESULT_RECYLCER.get().getOrCreate();
+            result.init(refOffset, refOffset, segment);
+            return result;
         }
 
         int ptr = segment.allocate(amount);
@@ -94,11 +130,15 @@ final class WireHelpers {
 
             WirePointer.setKindAndTarget(allocation.segment.getBuffer(), resultRefOffset, kind,
                     ptr1);
+            AllocateResult result = ALLOCATE_RESULT_RECYLCER.get().getOrCreate();
+            result.init(ptr1, resultRefOffset, allocation.segment);
+            return result;
 
-            return new AllocateResult(ptr1, resultRefOffset, allocation.segment);
         } else {
             WirePointer.setKindAndTarget(segment.getBuffer(), refOffset, kind, ptr);
-            return new AllocateResult(ptr, refOffset, segment);
+            AllocateResult result = ALLOCATE_RESULT_RECYLCER.get().getOrCreate();
+            result.init(ptr, refOffset, segment);
+            return result;
         }
     }
 
@@ -431,15 +471,21 @@ final class WireHelpers {
 
     }
 
-    static <T> T initStructPointer(StructBuilder.Factory<T> factory,
-            int refOffset,
-            GenericSegmentBuilder segment,
-            StructSize size) {
-        AllocateResult allocation = allocate(refOffset, segment, size.total(), WirePointer.STRUCT);
-        StructPointer.setFromStructSize(allocation.segment.getBuffer(), allocation.refOffset, size);
-        return factory.constructBuilder(allocation.segment, allocation.ptr * Constants.BYTES_PER_WORD,
-                allocation.ptr + size.data,
+    static <T> T initStructPointer(StructBuilder.Factory<T> factory, int refOffset, GenericSegmentBuilder segment, StructSize size) {
+
+        AllocateResult ownedAllocationResult = allocate(refOffset, segment, size.total(), WirePointer.STRUCT);
+        final GenericSegmentBuilder allocSegment = ownedAllocationResult.segment;
+        final int allocRefOffset = ownedAllocationResult.refOffset;
+        final int allocPtr = ownedAllocationResult.ptr;
+        ownedAllocationResult.recycle();
+        // invalid after this call
+        ownedAllocationResult = null;
+
+        StructPointer.setFromStructSize(allocSegment.getBuffer(), allocRefOffset, size);
+        final T result = factory.constructBuilder(allocSegment, allocPtr * Constants.BYTES_PER_WORD,
+                allocPtr + size.data,
                 size.data * 64, size.pointers);
+        return result;
     }
 
     static <T> T getWritableStructPointer(StructBuilder.Factory<T> factory,
@@ -475,21 +521,25 @@ final class WireHelpers {
             //# Don't let allocate() zero out the object just yet.
             zeroPointerAndFars(segment, refOffset);
 
-            AllocateResult allocation = allocate(refOffset, segment,
-                    totalSize, WirePointer.STRUCT);
+            AllocateResult ownedAllocationResult = allocate(refOffset, segment, totalSize, WirePointer.STRUCT);
+            final GenericSegmentBuilder allocSegment = ownedAllocationResult.segment;
+            final int allocRefOffset = ownedAllocationResult.refOffset;
+            final int allocPtr = ownedAllocationResult.ptr;
+            ownedAllocationResult.recycle();
+            // invalid after this call
+            ownedAllocationResult = null;
 
-            StructPointer.set(allocation.segment.getBuffer(), allocation.refOffset,
-                    newDataSize, newPointerCount);
+            StructPointer.set(allocSegment.getBuffer(), allocRefOffset, newDataSize, newPointerCount);
 
             //# Copy data section.
-            memcpy(allocation.segment.getBuffer(), allocation.ptr * Constants.BYTES_PER_WORD,
+            memcpy(allocSegment.getBuffer(), allocPtr * Constants.BYTES_PER_WORD,
                     resolved.segment.getBuffer(), resolved.ptr * Constants.BYTES_PER_WORD,
                     oldDataSize * Constants.BYTES_PER_WORD);
 
             //# Copy pointer section.
-            int newPointerSection = allocation.ptr + newDataSize;
+            int newPointerSection = allocPtr + newDataSize;
             for (int ii = 0; ii < oldPointerCount; ++ii) {
-                transferPointer(allocation.segment, newPointerSection + ii,
+                transferPointer(allocSegment, newPointerSection + ii,
                         resolved.segment, oldPointerSection + ii);
             }
 
@@ -501,7 +551,7 @@ final class WireHelpers {
             memClear(resolved.segment.getBuffer(), resolved.ptr * Constants.BYTES_PER_WORD,
                     (oldDataSize + oldPointerCount * Constants.WORDS_PER_POINTER) * Constants.BYTES_PER_WORD);
 
-            return factory.constructBuilder(allocation.segment, allocation.ptr * Constants.BYTES_PER_WORD,
+            return factory.constructBuilder(allocSegment, allocPtr * Constants.BYTES_PER_WORD,
                     newPointerSection, newDataSize * Constants.BITS_PER_WORD,
                     newPointerCount);
         } else {
@@ -541,17 +591,22 @@ final class WireHelpers {
 
         //# Allocate the list, prefixed by a single WirePointer.
         int wordCount = elementCount * wordsPerElement;
-        AllocateResult allocation = allocate(refOffset, segment, Constants.POINTER_SIZE_IN_WORDS + wordCount,
-                WirePointer.LIST);
+        AllocateResult ownedAllocationResult = allocate(refOffset, segment, Constants.POINTER_SIZE_IN_WORDS + wordCount, WirePointer.LIST);
+        final GenericSegmentBuilder allocSegment = ownedAllocationResult.segment;
+        final int allocPtr = ownedAllocationResult.ptr;
+        final int allocRefOffset = ownedAllocationResult.refOffset;
+        ownedAllocationResult.recycle();
+        // invalid after this call
+        ownedAllocationResult = null;
 
         //# Initialize the pointer.
-        ListPointer.setInlineComposite(allocation.segment.getBuffer(), allocation.refOffset, wordCount);
-        WirePointer.setKindAndInlineCompositeListElementCount(allocation.segment.getBuffer(), allocation.ptr,
+        ListPointer.setInlineComposite(allocSegment.getBuffer(), allocRefOffset, wordCount);
+        WirePointer.setKindAndInlineCompositeListElementCount(allocSegment.getBuffer(), allocPtr,
                 WirePointer.STRUCT, elementCount);
-        StructPointer.setFromStructSize(allocation.segment.getBuffer(), allocation.ptr, elementSize);
+        StructPointer.setFromStructSize(allocSegment.getBuffer(), allocPtr, elementSize);
 
-        return factory.constructBuilder(allocation.segment,
-                (allocation.ptr + 1) * Constants.BYTES_PER_WORD,
+        return factory.constructBuilder(allocSegment,
+                (allocPtr + 1) * Constants.BYTES_PER_WORD,
                 elementCount, wordsPerElement * Constants.BITS_PER_WORD,
                 elementSize.data * Constants.BITS_PER_WORD, elementSize.pointers);
     }
@@ -954,7 +1009,7 @@ final class WireHelpers {
 
         int refTarget = WirePointer.target(refOffset, ref);
         // use a Threadlocal recycler for the far results to safely avoid generating billions of instances
-        FollowFarsResult ownedFollowFarsResult = FAR_RESULT_RECYLCER.get().getOrCreate();
+        FollowFarsResult ownedFollowFarsResult = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
         followFars(ref, refTarget, segment, ownedFollowFarsResult);
         final long farRef = ownedFollowFarsResult.ref;
         final SegmentDataContainer farSegment = ownedFollowFarsResult.segment;
@@ -1126,7 +1181,7 @@ final class WireHelpers {
         int srcTarget = WirePointer.target(srcOffset, srcRef);
 
         // use a Threadlocal recycler for the far results to safely avoid generating billions of instances
-        FollowFarsResult ownedFollowFarsResult = FAR_RESULT_RECYLCER.get().getOrCreate();
+        FollowFarsResult ownedFollowFarsResult = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
         followFars(srcRef, srcTarget, srcSegment, ownedFollowFarsResult);
         final long farRef = ownedFollowFarsResult.ref;
         final SegmentDataContainer farSegment = ownedFollowFarsResult.segment;
@@ -1245,7 +1300,7 @@ final class WireHelpers {
         int refTarget = WirePointer.target(refOffset, ref);
 
         // use a Threadlocal recycler for the far results to safely avoid generating billions of instances
-        FollowFarsResult ownedFollowFarsResult = FAR_RESULT_RECYLCER.get().getOrCreate();
+        FollowFarsResult ownedFollowFarsResult = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
         followFars(ref, refTarget, segment, ownedFollowFarsResult);
         final long farRef = ownedFollowFarsResult.ref;
         final SegmentDataContainer farSegment = ownedFollowFarsResult.segment;
@@ -1353,7 +1408,7 @@ final class WireHelpers {
         int refTarget = WirePointer.target(refOffset, ref);
 
         // use a Threadlocal recycler for the far results to safely avoid generating billions of instances
-        FollowFarsResult ownedFollowFarsResult = FAR_RESULT_RECYLCER.get().getOrCreate();
+        FollowFarsResult ownedFollowFarsResult = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
         followFars(ref, refTarget, segment, ownedFollowFarsResult);
         final long farRef = ownedFollowFarsResult.ref;
         final SegmentDataContainer farSegment = ownedFollowFarsResult.segment;
@@ -1389,7 +1444,7 @@ final class WireHelpers {
             return fallBack;
         }
 
-        FollowFarsResult ownedFollowFarsResult = FAR_RESULT_RECYLCER.get().getOrCreate();
+        FollowFarsResult ownedFollowFarsResult = FOLLOW_FARS_RESULT_RECYLCER.get().getOrCreate();
 
         followFars(ref, WirePointer.target(refOffset, ref), segment, ownedFollowFarsResult);
         final Data.Reader result = readDataPointer(ownedFollowFarsResult, recycler);
