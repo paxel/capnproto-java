@@ -15,10 +15,11 @@ public class DefaultAllocator implements Allocator {
     }
     public ByteBufferAllocationStyle allocationStyle = ByteBufferAllocationStyle.REGULAR;
 
-    public AllocationStrategy allocationStrategy =
-        AllocationStrategy.GROW_HEURISTICALLY;
+    public AllocationStrategy allocationStrategy
+            = AllocationStrategy.GROW_HEURISTICALLY;
 
-    public DefaultAllocator() {}
+    public DefaultAllocator() {
+    }
 
     public DefaultAllocator(AllocationStrategy allocationStrategy) {
         this.allocationStrategy = allocationStrategy;
@@ -29,7 +30,7 @@ public class DefaultAllocator implements Allocator {
     }
 
     public DefaultAllocator(AllocationStrategy allocationStrategy,
-                            ByteBufferAllocationStyle style) {
+            ByteBufferAllocationStyle style) {
         this.allocationStrategy = allocationStrategy;
         this.allocationStyle = style;
     }
@@ -39,15 +40,15 @@ public class DefaultAllocator implements Allocator {
     }
 
     @Override
-    public java.nio.ByteBuffer allocateSegment(int minimumSize) {
+    public DataView allocateSegment(int minimumSize) {
         int size = Math.max(minimumSize, this.nextSize);
         ByteBuffer result = null;
         switch (allocationStyle) {
-          case REGULAR:
-            result = ByteBuffer.allocate(size);
-            break;
-          case DIRECT:
-            result = ByteBuffer.allocateDirect(size);
+            case REGULAR:
+                result = ByteBuffer.allocate(size);
+                break;
+            case DIRECT:
+                result = ByteBuffer.allocateDirect(size);
         }
 
         switch (this.allocationStrategy) {
@@ -59,6 +60,6 @@ public class DefaultAllocator implements Allocator {
         }
 
         this.nextSize += size;
-        return result;
+        return new ByteBufferDataView(result);
     }
 }

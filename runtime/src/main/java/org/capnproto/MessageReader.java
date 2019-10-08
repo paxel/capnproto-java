@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 package org.capnproto;
 
-import java.nio.ByteBuffer;
-
 public final class MessageReader {
 
     // must be accessible as long the scala tests access it
@@ -42,7 +40,7 @@ public final class MessageReader {
         this.serializedSize = calculateSize();
     }
 
-    public MessageReader(ByteBuffer[] segmentSlices, ReaderOptions options) {
+    public MessageReader(DataView[] segmentSlices, ReaderOptions options) {
         this.nestingLimit = options.nestingLimit;
         this.arena = new ReaderArena(segmentSlices, options.traversalLimitInWords);
         this.serializedSize = calculateSize();

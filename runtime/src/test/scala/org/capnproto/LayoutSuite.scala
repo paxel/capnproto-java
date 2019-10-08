@@ -39,7 +39,7 @@ class LayoutSuite extends FunSuite {
             0x01, 0x23, 0x45, 0x67, 0x89.toByte, 0xab.toByte,
             0xcd.toByte, 0xef.toByte)
 
-    val buffer = java.nio.ByteBuffer.wrap(data)
+    val buffer = ByteBufferDataView.wrap(data)
     buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
 
     val arena = new ReaderArena(Array(buffer), 0x7fffffffffffffffL)
@@ -129,7 +129,7 @@ class LayoutSuite extends FunSuite {
 
 
   test("StructRoundTrip_OneSegment") {
-    val buffer = java.nio.ByteBuffer.allocate(1024 * 8)
+    val buffer = ByteBufferDataView.allocate(1024 * 8)
     buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
 
     val segment = new SegmentBuilder(buffer, new BuilderArena(BuilderArena.SUGGESTED_FIRST_SEGMENT_WORDS,

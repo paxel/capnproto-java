@@ -120,7 +120,7 @@ public class ListReader {
     }
 
     protected <T> T _getPointerElement(FromPointerReaderBlobDefault<T> factory, int index,
-            java.nio.ByteBuffer defaultBuffer, int defaultOffset, int defaultSize) {
+            DataView defaultBuffer, int defaultOffset, int defaultSize) {
         return factory.fromPointerReaderBlobDefault(
                 this.segment,
                 (this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE)) / Constants.BYTES_PER_WORD,

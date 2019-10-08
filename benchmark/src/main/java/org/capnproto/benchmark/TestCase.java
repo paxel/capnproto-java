@@ -18,7 +18,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto.benchmark;
 
 import java.io.IOException;
@@ -27,20 +26,18 @@ import java.nio.ByteBuffer;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileDescriptor;
+import org.capnproto.ByteBufferDataView;
 
 import org.capnproto.StructFactory;
 import org.capnproto.MessageBuilder;
 import org.capnproto.MessageReader;
 
-public abstract class TestCase<RequestFactory extends
-                          StructFactory<RequestBuilder, RequestReader>,
-                          RequestBuilder extends org.capnproto.StructBuilder,
-                          RequestReader extends org.capnproto.StructReader,
-                          ResponseFactory extends StructFactory<ResponseBuilder, ResponseReader>,
-                          ResponseBuilder extends org.capnproto.StructBuilder,
-                          ResponseReader extends org.capnproto.StructReader, Expectation> {
+public abstract class TestCase<RequestFactory extends StructFactory<RequestBuilder, RequestReader>, RequestBuilder extends org.capnproto.StructBuilder, RequestReader extends org.capnproto.StructReader, ResponseFactory extends StructFactory<ResponseBuilder, ResponseReader>, ResponseBuilder extends org.capnproto.StructBuilder, ResponseReader extends org.capnproto.StructReader, Expectation> {
+
     public abstract Expectation setupRequest(Common.FastRand rng, RequestBuilder request);
+
     public abstract void handleRequest(RequestReader request, ResponseBuilder response);
+
     public abstract boolean checkResponse(ResponseReader response, Expectation expected);
 
     static final int SCRATCH_SIZE = 128 * 1024;
@@ -49,14 +46,14 @@ public abstract class TestCase<RequestFactory extends
 
     public MessageBuilder newMessageBuilder(boolean useScratchSpace, ByteBuffer scratchSpace) {
         if (useScratchSpace) {
-            return new MessageBuilder(scratchSpace);
+            return new MessageBuilder(new ByteBufferDataView(scratchSpace));
         } else {
             return new MessageBuilder();
         }
     }
 
     public void passByObject(RequestFactory requestFactory, ResponseFactory responseFactory,
-                             boolean reuse, Compression compression, long iters) {
+            boolean reuse, Compression compression, long iters) {
 
         Common.FastRand rng = new Common.FastRand();
 
@@ -78,7 +75,7 @@ public abstract class TestCase<RequestFactory extends
     }
 
     public void passByBytes(RequestFactory requestFactory, ResponseFactory responseFactory,
-                            boolean reuse, Compression compression, long iters) throws IOException {
+            boolean reuse, Compression compression, long iters) throws IOException {
 
         ByteBuffer requestBytes = ByteBuffer.allocate(SCRATCH_SIZE * 8);
         ByteBuffer responseBytes = ByteBuffer.allocate(SCRATCH_SIZE * 8);
@@ -97,8 +94,8 @@ public abstract class TestCase<RequestFactory extends
             }
 
             {
-                org.capnproto.MessageReader messageReader =
-                    compression.newBufferedReader(new org.capnproto.ArrayInputStream(requestBytes));
+                org.capnproto.MessageReader messageReader
+                        = compression.newBufferedReader(new org.capnproto.ArrayInputStream(requestBytes));
                 this.handleRequest(messageReader.getRoot(requestFactory), response);
             }
 
@@ -108,8 +105,8 @@ public abstract class TestCase<RequestFactory extends
             }
 
             {
-                org.capnproto.MessageReader messageReader =
-                    compression.newBufferedReader(new org.capnproto.ArrayInputStream(responseBytes));
+                org.capnproto.MessageReader messageReader
+                        = compression.newBufferedReader(new org.capnproto.ArrayInputStream(responseBytes));
                 if (!this.checkResponse(messageReader.getRoot(responseFactory), expected)) {
                     throw new Error("incorrect response");
                 }
@@ -123,11 +120,11 @@ public abstract class TestCase<RequestFactory extends
     }
 
     public void syncServer(RequestFactory requestFactory, ResponseFactory responseFactory,
-                           boolean reuse, Compression compression, long iters) throws IOException {
-        org.capnproto.BufferedOutputStreamWrapper outBuffered =
-            new org.capnproto.BufferedOutputStreamWrapper((new FileOutputStream(FileDescriptor.out)).getChannel());
-        org.capnproto.BufferedInputStreamWrapper inBuffered =
-            new org.capnproto.BufferedInputStreamWrapper((new FileInputStream(FileDescriptor.in)).getChannel());
+            boolean reuse, Compression compression, long iters) throws IOException {
+        org.capnproto.BufferedOutputStreamWrapper outBuffered
+                = new org.capnproto.BufferedOutputStreamWrapper((new FileOutputStream(FileDescriptor.out)).getChannel());
+        org.capnproto.BufferedInputStreamWrapper inBuffered
+                = new org.capnproto.BufferedInputStreamWrapper((new FileInputStream(FileDescriptor.in)).getChannel());
 
         for (int ii = 0; ii < iters; ++ii) {
             MessageBuilder responseMessage = newMessageBuilder(reuse, responseScratchSpace);
@@ -145,12 +142,12 @@ public abstract class TestCase<RequestFactory extends
     }
 
     public void syncClient(RequestFactory requestFactory, ResponseFactory responseFactory,
-                           boolean reuse, Compression compression, long iters) throws IOException {
+            boolean reuse, Compression compression, long iters) throws IOException {
         Common.FastRand rng = new Common.FastRand();
-        org.capnproto.BufferedOutputStreamWrapper outBuffered =
-            new org.capnproto.BufferedOutputStreamWrapper((new FileOutputStream(FileDescriptor.out)).getChannel());
-        org.capnproto.BufferedInputStreamWrapper inBuffered =
-            new org.capnproto.BufferedInputStreamWrapper((new FileInputStream(FileDescriptor.in)).getChannel());
+        org.capnproto.BufferedOutputStreamWrapper outBuffered
+                = new org.capnproto.BufferedOutputStreamWrapper((new FileOutputStream(FileDescriptor.out)).getChannel());
+        org.capnproto.BufferedInputStreamWrapper inBuffered
+                = new org.capnproto.BufferedInputStreamWrapper((new FileInputStream(FileDescriptor.in)).getChannel());
 
         for (int ii = 0; ii < iters; ++ii) {
             MessageBuilder requestMessage = newMessageBuilder(reuse, requestScratchSpace);

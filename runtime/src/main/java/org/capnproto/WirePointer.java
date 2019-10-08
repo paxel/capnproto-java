@@ -18,12 +18,10 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
 
-import java.nio.ByteBuffer;
-
 final class WirePointer {
+
     public static final byte STRUCT = 0;
     public static final byte LIST = 1;
     public static final byte FAR = 2;
@@ -34,27 +32,26 @@ final class WirePointer {
     }
 
     public static int offsetAndKind(long wirePointer) {
-        return (int)(wirePointer & 0xffff_ffff);
+        return (int) (wirePointer & 0xffff_ffff);
     }
 
     public static byte kind(long wirePointer) {
-        return (byte)(offsetAndKind(wirePointer) & 3);
+        return (byte) (offsetAndKind(wirePointer) & 3);
     }
 
     public static int target(int offset, long wirePointer) {
         return offset + 1 + (offsetAndKind(wirePointer) >>> 2);
     }
 
-    public static void setKindAndTarget(ByteBuffer buffer, int offset, byte kind, int targetOffset) {
-        buffer.putInt(offset * 8,
-                      (((targetOffset - offset) - 1) << 2) | kind);
+    public static void setKindAndTarget(DataView buffer, int offset, byte kind, int targetOffset) {
+        buffer.putInt(offset * 8, (((targetOffset - offset) - 1) << 2) | kind);
     }
 
-    public static void setKindWithZeroOffset(ByteBuffer buffer, int offset, byte kind) {
+    public static void setKindWithZeroOffset(DataView buffer, int offset, byte kind) {
         buffer.putInt(offset * Constants.BYTES_PER_WORD, kind);
     }
 
-    public static void setKindAndTargetForEmptyStruct(ByteBuffer buffer, int offset) {
+    public static void setKindAndTargetForEmptyStruct(DataView buffer, int offset) {
         //# This pointer points at an empty struct. Assuming the
         //# WirePointer itself is in-bounds, we can set the target to
         //# point either at the WirePointer itself or immediately after
@@ -67,7 +64,7 @@ final class WirePointer {
         buffer.putInt(offset * 8, 0xffff_fffc);
     }
 
-    public static void setOffsetAndKind(ByteBuffer buffer, int offset, int offsetAndKind) {
+    public static void setOffsetAndKind(DataView buffer, int offset, int offsetAndKind) {
         buffer.putInt(offset * 8, offsetAndKind);
     }
 
@@ -75,14 +72,11 @@ final class WirePointer {
         return offsetAndKind(wirePointer) >>> 2;
     }
 
-    public static void setKindAndInlineCompositeListElementCount(ByteBuffer buffer,
-                                                                 int offset,
-                                                                 byte kind,
-                                                                 int elementCount) {
+    public static void setKindAndInlineCompositeListElementCount(DataView buffer, int offset, byte kind, int elementCount) {
         buffer.putInt(offset * 8, (elementCount << 2) | kind);
     }
 
     public static int upper32Bits(long wirePointer) {
-        return (int)(wirePointer >>> 32);
+        return (int) (wirePointer >>> 32);
     }
 }

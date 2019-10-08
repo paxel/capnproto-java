@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 package org.capnproto;
 
-import java.nio.ByteBuffer;
-
 /**
  * Representation of the SegmentBuilder. This Builder is responsible to manage
  * one Segment for building a new Message.
@@ -88,7 +86,7 @@ public interface GenericSegmentBuilder extends SegmentDataContainer {
      *
      * @return
      */
-    ByteBuffer getSegmentForOutput();
+    DataView getSegmentForOutput();
 
     /**
      * Writes zeroes in the occupied space of the Segment.

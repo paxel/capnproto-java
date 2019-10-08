@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 
 public final class Data {
 
-    private static final ByteBuffer EMPTY = ByteBuffer.allocate(0);
+    private static final DataView EMPTY = ByteBufferDataView.allocate(0);
 
     public static final class Factory implements FromPointerReaderBlobDefault<Reader>,
             PointerFactory<Builder, Reader>,
@@ -39,7 +39,7 @@ public final class Data {
         };
 
         @Override
-        public final Reader fromPointerReaderBlobDefault(SegmentDataContainer segment, int pointer, java.nio.ByteBuffer defaultBuffer,
+        public final Reader fromPointerReaderBlobDefault(SegmentDataContainer segment, int pointer, DataView defaultBuffer,
                 int defaultOffset, int defaultSize) {
             return WireHelpers.readDataPointer(segment,
                     pointer, RECYCLER.get(),
@@ -53,7 +53,7 @@ public final class Data {
 
         @Override
         public final Builder fromPointerBuilderBlobDefault(GenericSegmentBuilder segment, int pointer,
-                java.nio.ByteBuffer defaultBuffer, int defaultOffset, int defaultSize) {
+                DataView defaultBuffer, int defaultOffset, int defaultSize) {
             return WireHelpers.getWritableDataPointer(pointer,
                     segment,
                     defaultBuffer,
@@ -74,8 +74,8 @@ public final class Data {
         }
 
         @Override
-        public final void setPointerBuilder(GenericSegmentBuilder segment, int pointer, Reader value) {
-            WireHelpers.setDataPointer(pointer, segment, value);
+        public final void setPointerBuilder(GenericSegmentBuilder segment, int pointer, Reader src) {
+            WireHelpers.setDataPointer(pointer, segment, src);
         }
     }
     public static final Factory factory = new Factory();
@@ -84,7 +84,7 @@ public final class Data {
 
         private boolean recycled;
         private Recycler<Reader> recycler;
-        public ByteBuffer buffer;
+        private DataView buffer;
         public int offset; // in bytes
         public int size; // in bytes
 
@@ -102,7 +102,7 @@ public final class Data {
          * @param offset
          * @param size
          */
-        public Reader(ByteBuffer buffer, int offset, int size) {
+        public Reader(DataView buffer, int offset, int size) {
             init(buffer, offset, size);
         }
 
@@ -122,7 +122,7 @@ public final class Data {
             recycled = false;
         }
 
-        public final void init(ByteBuffer buffer1, int offset1, int size1) {
+        public final void init(DataView buffer1, int offset1, int size1) {
             this.buffer = buffer1;
             this.offset = offset1 * 8;
             this.size = size1;
@@ -130,7 +130,7 @@ public final class Data {
         }
 
         public final void init(byte[] bytes) {
-            this.buffer = ByteBuffer.wrap(bytes);
+            this.buffer = ByteBufferDataView.wrap(bytes);
             this.offset = 0;
             this.size = bytes.length;
             this.recycled = false;
@@ -141,6 +141,28 @@ public final class Data {
             return this.size;
         }
 
+        public int getOffset() {
+            return offset;
+        }
+
+        public int getSize() {
+            return size;
+        }
+
+        /**
+         * Retrieve the internal buffer. This buffer contains the whole message, not just the Data portion. You need offset and size to find the data portion.
+         *
+         * @return the Buffer
+         */
+        public DataView getBuffer() {
+            return buffer;
+        }
+
+        /**
+         * Creates a new DataView, that shares the Data portion of the message. The new buffer only contains the data portion.
+         *
+         * @return a new buffer.
+         */
         public ByteBuffer asByteBuffer() {
             checkRecycled();
             ByteBuffer dup = this.buffer.asReadOnlyBuffer();
@@ -150,8 +172,14 @@ public final class Data {
             return result;
         }
 
+        /**
+         * Retrieves the bytes of the Data portion.
+         *
+         * @return the data.
+         */
         public byte[] toArray() {
             checkRecycled();
+            // todo: don't duplicate
             ByteBuffer dup = this.buffer.duplicate();
             byte result[] = new byte[this.size];
             dup.position(this.offset);
@@ -190,21 +218,25 @@ public final class Data {
             }
         }
 
+        public void writeData(int offset, int size, DataView dst,int dstOffset) {
+            buffer.write(offset, size, dst, dstOffset);
+        }
+
     }
 
     public static final class Builder {
 
-        public final ByteBuffer buffer;
+        public final DataView buffer;
         public final int offset; // in bytes
         public final int size; // in bytes
 
         public Builder() {
-            this.buffer = ByteBuffer.allocate(0);
+            this.buffer = ByteBufferDataView.allocate(0);
             this.offset = 0;
             this.size = 0;
         }
 
-        public Builder(ByteBuffer buffer, int offset, int size) {
+        public Builder(DataView buffer, int offset, int size) {
             this.buffer = buffer;
             this.offset = offset;
             this.size = size;
@@ -229,6 +261,10 @@ public final class Data {
         @Override
         public String toString() {
             return "Data{" + new ByteBufferFormatter().format(asByteBuffer()) + '}';
+        }
+
+        DataView getDataView() {
+            return buffer;
         }
     }
 }

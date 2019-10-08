@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 package org.capnproto;
 
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,8 +43,8 @@ public final class BuilderArena implements AllocatingArena {
      * to the {@link AllocationStrategy}.
      *
      * @param firstSegmentSizeWords The size of the first segment. (allocated on
-     * demand)
-     * @param allocationStrategy The allocation strategy.
+     *                              demand)
+     * @param allocationStrategy    The allocation strategy.
      */
     public BuilderArena(int firstSegmentSizeWords, AllocationStrategy allocationStrategy) {
         this.segments = new ArrayList<>();
@@ -67,14 +66,12 @@ public final class BuilderArena implements AllocatingArena {
      * Constructs a BuilderArena with an immediately allocated first segment of
      * given size. The Allocator is not used for the first segment.
      *
-     * @param allocator The allocator for other segments.
+     * @param allocator    The allocator for other segments.
      * @param firstSegment The first segment.
      */
-    public BuilderArena(Allocator allocator, ByteBuffer firstSegment) {
+    public BuilderArena(Allocator allocator, DataView firstSegment) {
         this.segments = new ArrayList<>();
-        SegmentBuilder newSegment = new SegmentBuilder(
-                firstSegment,
-                this);
+        SegmentBuilder newSegment = new SegmentBuilder(firstSegment, this);
         newSegment.buffer.order(ByteOrder.LITTLE_ENDIAN);
         newSegment.id = 0;
         this.segments.add(newSegment);
@@ -120,9 +117,7 @@ public final class BuilderArena implements AllocatingArena {
                 return new AllocateResult(this.segments.get(len - 1), result);
             }
         }
-        SegmentBuilder newSegment = new SegmentBuilder(
-                this.allocator.allocateSegment(amount * Constants.BYTES_PER_WORD),
-                this);
+        SegmentBuilder newSegment = new SegmentBuilder(this.allocator.allocateSegment(amount * Constants.BYTES_PER_WORD), this);
 
         newSegment.getBuffer().order(ByteOrder.LITTLE_ENDIAN);
         newSegment.setId(len);
@@ -132,8 +127,8 @@ public final class BuilderArena implements AllocatingArena {
     }
 
     @Override
-    public final ByteBuffer[] getSegmentsForOutput() {
-        ByteBuffer[] result = new ByteBuffer[this.segments.size()];
+    public final DataView[] getSegmentsForOutput() {
+        DataView[] result = new DataView[this.segments.size()];
         for (int ii = 0; ii < this.segments.size(); ++ii) {
             GenericSegmentBuilder segment = segments.get(ii);
             result[ii] = segment.getSegmentForOutput();

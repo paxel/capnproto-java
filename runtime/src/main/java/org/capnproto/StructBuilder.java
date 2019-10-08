@@ -18,13 +18,15 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
 
 public class StructBuilder {
+
     public interface Factory<T> {
+
         T constructBuilder(GenericSegmentBuilder segment, int data, int pointers, int dataSize,
                 short pointerCount);
+
         StructSize structSize();
     }
 
@@ -180,13 +182,11 @@ public class StructBuilder {
         return factory.fromPointerBuilder(this.segment, this.pointers + index);
     }
 
-    protected final <T> T _getPointerField(FromPointerBuilderRefDefault<T> factory, int index,
-            SegmentDataContainer defaultSegment, int defaultOffset) {
+    protected final <T> T _getPointerField(FromPointerBuilderRefDefault<T> factory, int index, SegmentDataContainer defaultSegment, int defaultOffset) {
         return factory.fromPointerBuilderRefDefault(this.segment, this.pointers + index, defaultSegment, defaultOffset);
     }
 
-    protected final <T> T _getPointerField(FromPointerBuilderBlobDefault<T> factory, int index,
-            java.nio.ByteBuffer defaultBuffer, int defaultOffset, int defaultSize) {
+    protected final <T> T _getPointerField(FromPointerBuilderBlobDefault<T> factory, int index, DataView defaultBuffer, int defaultOffset, int defaultSize) {
         return factory.fromPointerBuilderBlobDefault(this.segment, this.pointers + index, defaultBuffer, defaultOffset, defaultSize);
     }
 
@@ -203,13 +203,13 @@ public class StructBuilder {
         int sharedDataSize = java.lang.Math.min(this.dataSize, other.dataSize);
         int sharedPointerCount = java.lang.Math.min(this.pointerCount, other.pointerCount);
 
-        if (other.segment == this.segment &&
-            ((sharedDataSize > 0 && other.data == this.data) ||
-             (sharedPointerCount > 0 && other.pointers == this.pointers))) {
+        if (other.segment == this.segment
+                && ((sharedDataSize > 0 && other.data == this.data)
+                || (sharedPointerCount > 0 && other.pointers == this.pointers))) {
             // At least one of the section pointers is pointing to ourself. Verify that the other is too
             // (but ignore empty sections).
-            if ((sharedDataSize == 0 || other.data == this.data) &&
-                (sharedPointerCount == 0 || other.pointers == this.pointers)) {
+            if ((sharedDataSize == 0 || other.data == this.data)
+                    && (sharedPointerCount == 0 || other.pointers == this.pointers)) {
                 throw new Error("Only one of the section pointers is pointing to ourself");
             }
 
@@ -225,8 +225,8 @@ public class StructBuilder {
             } else {
                 int unshared = this.data + sharedDataSize / Constants.BITS_PER_BYTE;
                 WireHelpers.memClear(this.segment.getBuffer(),
-                                   unshared,
-                                   (this.dataSize - sharedDataSize) / Constants.BITS_PER_BYTE);
+                        unshared,
+                        (this.dataSize - sharedDataSize) / Constants.BITS_PER_BYTE);
             }
         }
 
@@ -235,10 +235,10 @@ public class StructBuilder {
             this._setBooleanField(0, other._getBooleanField(0));
         } else {
             WireHelpers.memcpy(this.segment.getBuffer(),
-                               this.data,
-                               other.segment.getBuffer(),
-                               other.data,
-                               sharedDataSize / Constants.BITS_PER_BYTE);
+                    this.data,
+                    other.segment.getBuffer(),
+                    other.data,
+                    sharedDataSize / Constants.BITS_PER_BYTE);
         }
 
         // Zero out all pointers in the target.
@@ -249,10 +249,10 @@ public class StructBuilder {
 
         for (int ii = 0; ii < sharedPointerCount; ++ii) {
             WireHelpers.copyPointer(this.segment,
-                                    this.pointers + ii,
-                                    other.segment,
-                                    other.pointers + ii,
-                                    other.nestingLimit);
+                    this.pointers + ii,
+                    other.segment,
+                    other.pointers + ii,
+                    other.nestingLimit);
         }
     }
 }

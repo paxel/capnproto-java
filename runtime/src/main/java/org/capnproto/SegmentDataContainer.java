@@ -40,7 +40,7 @@ public interface SegmentDataContainer {
      *
      * @return the buffer.
      */
-    ByteBuffer getBuffer();
+    DataView getBuffer();
 
     /**
      * Retrieve the Arena used in this SegmentDataContainer.

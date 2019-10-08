@@ -9,5 +9,5 @@ public interface Allocator {
      * buffer must contain at least `minimumSize` bytes, all of which MUST be
      * set to zero.
      */
-   public java.nio.ByteBuffer allocateSegment(int minimumSize);
+    public DataView allocateSegment(int minimumSize);
 }

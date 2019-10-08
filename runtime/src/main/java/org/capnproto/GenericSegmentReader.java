@@ -20,15 +20,13 @@
 // THE SOFTWARE.
 package org.capnproto;
 
-import java.nio.ByteBuffer;
-
 /**
  * Representation of the SegmentBuilder. This Builder is responsible to manage
  * one Segment of an existing message.
  */
 public interface GenericSegmentReader extends SegmentDataContainer {
 
-    GenericSegmentReader EMPTY = new SegmentReader(ByteBuffer.allocate(8), null);
+    GenericSegmentReader EMPTY = new SegmentReader(ByteBufferDataView.wrap(new byte[8]), null);
 
     /**
      * Retrieve the Arena containing all Segments.

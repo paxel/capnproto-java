@@ -31,8 +31,7 @@ public final class Text {
             SetPointerBuilder<Builder, Reader> {
 
         @Override
-        public final Reader fromPointerReaderBlobDefault(SegmentDataContainer segment, int pointer, java.nio.ByteBuffer defaultBuffer,
-                int defaultOffset, int defaultSize) {
+        public final Reader fromPointerReaderBlobDefault(SegmentDataContainer segment, int pointer, DataView defaultBuffer, int defaultOffset, int defaultSize) {
             return WireHelpers.readTextPointer(segment, pointer, defaultBuffer, defaultOffset, defaultSize);
         }
 
@@ -43,7 +42,7 @@ public final class Text {
 
         @Override
         public final Builder fromPointerBuilderBlobDefault(GenericSegmentBuilder segment, int pointer,
-                java.nio.ByteBuffer defaultBuffer, int defaultOffset, int defaultSize) {
+                DataView defaultBuffer, int defaultOffset, int defaultSize) {
             return WireHelpers.getWritableTextPointer(pointer,
                     segment,
                     defaultBuffer,
@@ -72,18 +71,30 @@ public final class Text {
 
     public static final class Reader {
 
-        public final ByteBuffer buffer;
-        public final int offset; // in bytes
-        public final int size; // in bytes, not including NUL terminator
+        private final DataView buffer;
+        private final int offset; // in bytes
+        private final int size; // in bytes, not including NUL terminator
+
+        public DataView getBuffer() {
+            return buffer;
+        }
+
+        public int getOffset() {
+            return offset;
+        }
+
+        public int getSize() {
+            return size;
+        }
 
         public Reader() {
             // TODO what about the null terminator?
-            this.buffer = ByteBuffer.allocate(0);
+            this.buffer = ByteBufferDataView.allocate(0);
             this.offset = 0;
             this.size = 0;
         }
 
-        public Reader(ByteBuffer buffer, int offset, int size) {
+        public Reader(DataView buffer, int offset, int size) {
             this.buffer = buffer;
             this.offset = offset * 8;
             this.size = size;
@@ -92,7 +103,7 @@ public final class Text {
         public Reader(String value) {
             try {
                 byte[] bytes = value.getBytes("UTF-8");
-                this.buffer = ByteBuffer.wrap(bytes);
+                this.buffer = ByteBufferDataView.wrap(bytes);
                 this.offset = 0;
                 this.size = bytes.length;
             } catch (java.io.UnsupportedEncodingException e) {
@@ -131,17 +142,17 @@ public final class Text {
 
     public static final class Builder {
 
-        public final ByteBuffer buffer;
+        public final DataView buffer;
         public final int offset; // in bytes
         public final int size; // in bytes
 
         public Builder() {
-            this.buffer = ByteBuffer.allocate(0);
+            this.buffer = ByteBufferDataView.allocate(0);
             this.offset = 0;
             this.size = 0;
         }
 
-        public Builder(ByteBuffer buffer, int offset, int size) {
+        public Builder(DataView buffer, int offset, int size) {
             this.buffer = buffer;
             this.offset = offset;
             this.size = size;
@@ -170,19 +181,20 @@ public final class Text {
             }
         }
 
-        void copy(Reader value) {
-            ByteBuffer slice = value.buffer.duplicate();
-            slice.position(value.offset);
-            slice.limit(value.offset + value.size);
-            buffer.position(offset);
-            buffer.put(slice);
+        void copy(Reader srcReader) {
+            DataView src = srcReader.getBuffer();
+            src.write(srcReader.getOffset(), srcReader.getSize(), buffer, offset);
+        }
+
+        void writeData(int offset, int size, DataView dataView) {
+            dataView.write(this.offset, Math.min(size, this.size), buffer, offset);
         }
 
         void put(int i, byte get) {
             buffer.put(i, get);
         }
 
-        ByteBuffer getBuffer() {
+        DataView getBuffer() {
             return buffer;
         }
 

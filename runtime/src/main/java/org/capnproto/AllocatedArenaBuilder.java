@@ -31,7 +31,7 @@ public class AllocatedArenaBuilder {
 
     private SegmentCountValidator segmentCountValidator = AllocatedArenaBuilder::segmentCountValidator;
     private SegmentReader reader = this::createInternalByteBuffers;
-    private Function<ByteBuffer[], AllocatedArena> arenaFactory = SimpleReaderArena::new;
+    private Function<DataView[], AllocatedArena> arenaFactory = SimpleReaderArena::new;
     private Function<Integer, ByteBuffer> byteBufferFactory = AllocatedArenaBuilder::makeByteBuffer;
 
     public SegmentCountValidator getSegmentCountValidator() {
@@ -52,11 +52,11 @@ public class AllocatedArenaBuilder {
         return this;
     }
 
-    public Function<ByteBuffer[], AllocatedArena> getArenaFactory() {
+    public Function<DataView[], AllocatedArena> getArenaFactory() {
         return arenaFactory;
     }
 
-    public AllocatedArenaBuilder setArenaFactory(Function<ByteBuffer[], AllocatedArena> arenaFactory) {
+    public AllocatedArenaBuilder setArenaFactory(Function<DataView[], AllocatedArena> arenaFactory) {
         this.arenaFactory = arenaFactory;
         return this;
     }
@@ -74,11 +74,13 @@ public class AllocatedArenaBuilder {
      * Builds an Arena if the input contains valid data.
      *
      * @param input the input data.
+     *
      * @return a new arena or null if input was at EOF
+     *
      * @throws IOException if reading was impossible or input data invalid.
      */
     public AllocatedArena build(ReadableByteChannel input) throws IOException {
-        final ByteBuffer[] bb = reader.read(input);
+        final DataView[] bb = reader.read(input);
         if (bb == null) {
             return null;
         }
@@ -89,7 +91,9 @@ public class AllocatedArenaBuilder {
      * Reads the frame data of one Capnp message into a byteBuffer.
      *
      * @param bc The input data.
+     *
      * @return a ByteBuffer containing a complete Frame or null if EOF
+     *
      * @throws IOException if reading was impossible or input data invalid.
      */
     public ByteBuffer readFrame(ReadableByteChannel bc) throws IOException {
@@ -134,7 +138,7 @@ public class AllocatedArenaBuilder {
         return frame;
     }
 
-    private ByteBuffer[] createInternalByteBuffers(ReadableByteChannel bc) throws IOException {
+    private DataView[] createInternalByteBuffers(ReadableByteChannel bc) throws IOException {
         firstWord.rewind();
         int read = fillBuffer(bc, firstWord);
         if (read == 0) {
@@ -168,15 +172,15 @@ public class AllocatedArenaBuilder {
         if (read < totalWords * Constants.BYTES_PER_WORD) {
             throw new IOException("Incomplete data: EOF after " + read + segmentSizeHeaderSize + Constants.BYTES_PER_WORD);
         }
-        ByteBuffer[] segmentSlices = new ByteBuffer[segmentCount];
+        DataView[] segmentSlices = new DataView[segmentCount];
         allSegments.rewind();
-        segmentSlices[0] = allSegments.slice();
+        segmentSlices[0] = new ByteBufferDataView(allSegments.slice());
         segmentSlices[0].limit(segment0Size * Constants.BYTES_PER_WORD);
         segmentSlices[0].order(ByteOrder.LITTLE_ENDIAN);
         int offset = segment0Size;
         for (int ii = 1; ii < segmentCount; ++ii) {
             allSegments.position(offset * Constants.BYTES_PER_WORD);
-            segmentSlices[ii] = allSegments.slice();
+            segmentSlices[ii] = new ByteBufferDataView(allSegments.slice());
             segmentSlices[ii].limit(moreSizes.get(ii - 1) * Constants.BYTES_PER_WORD);
             segmentSlices[ii].order(ByteOrder.LITTLE_ENDIAN);
             offset += moreSizes.get(ii - 1);
@@ -190,8 +194,10 @@ public class AllocatedArenaBuilder {
      * Message is truncated an IllegalArgumentException is thrown.
      *
      * @param bb The
+     *
      * @return an AllocatedArena or null if bb was empty.
-     * @throws IOException If the SegmentCountValidator does.
+     *
+     * @throws IOException              If the SegmentCountValidator does.
      * @throws IllegalArgumentException in case the message is trunctaed.
      */
     public AllocatedArena build(ByteBuffer bb) throws IOException {
@@ -204,7 +210,7 @@ public class AllocatedArenaBuilder {
 
         this.segmentCountValidator.validate(segmentCount);
 
-        ByteBuffer[] segmentSlices = new ByteBuffer[segmentCount];
+        DataView[] segmentSlices = new DataView[segmentCount];
 
         int segmentSizesBase = bb.position();
         int segmentSizesSize = segmentCount * 4;
@@ -218,7 +224,7 @@ public class AllocatedArenaBuilder {
             int segmentSize = bb.getInt(segmentSizesBase + ii * 4);
 
             bb.position(segmentBase + totalWords * Constants.BYTES_PER_WORD);
-            segmentSlices[ii] = bb.slice();
+            segmentSlices[ii] = new ByteBufferDataView(bb.slice());
             segmentSlices[ii].limit(segmentSize * Constants.BYTES_PER_WORD);
             segmentSlices[ii].order(ByteOrder.LITTLE_ENDIAN);
 
@@ -234,9 +240,11 @@ public class AllocatedArenaBuilder {
      *
      * @param source the source
      * @param target the target
+     *
      * @return how many bytes were read.
+     *
      * @throws IOException from
-     * {@link ReadableByteChannel#read(java.nio.ByteBuffer)}.
+     *                     {@link ReadableByteChannel#read(java.nio.ByteBuffer)}.
      *
      */
     private int fillBuffer(ReadableByteChannel source, ByteBuffer target) throws IOException {
@@ -260,6 +268,6 @@ public class AllocatedArenaBuilder {
     @FunctionalInterface
     public static interface SegmentReader {
 
-        ByteBuffer[] read(ReadableByteChannel in) throws IOException;
+        DataView[] read(ReadableByteChannel in) throws IOException;
     }
 }

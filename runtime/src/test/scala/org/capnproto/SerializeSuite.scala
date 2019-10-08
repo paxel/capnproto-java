@@ -23,6 +23,7 @@ package org.capnproto
 
 import java.nio.ByteBuffer
 
+
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 

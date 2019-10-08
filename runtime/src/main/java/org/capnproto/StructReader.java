@@ -218,7 +218,7 @@ public class StructReader {
         }
     }
 
-    protected final <T> T _getPointerField(FromPointerReaderBlobDefault<T> factory, int ptrIndex, java.nio.ByteBuffer defaultBuffer, int defaultOffset, int defaultSize) {
+    protected final <T> T _getPointerField(FromPointerReaderBlobDefault<T> factory, int ptrIndex, DataView defaultBuffer, int defaultOffset, int defaultSize) {
         validator.run();
         if (ptrIndex < this.pointerCount) {
             return factory.fromPointerReaderBlobDefault(this.segment,

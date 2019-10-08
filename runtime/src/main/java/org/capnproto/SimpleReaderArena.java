@@ -1,6 +1,5 @@
 package org.capnproto;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,7 +11,7 @@ public class SimpleReaderArena implements AllocatedArena {
 
     private final List<GenericSegmentReader> segments;
 
-    public SimpleReaderArena(ByteBuffer[] segmentSlices) {
+    public SimpleReaderArena(DataView[] segmentSlices) {
         this.segments = new ArrayList<>();
         for (int ii = 0; ii < segmentSlices.length; ++ii) {
             this.segments.add(new SegmentReader(segmentSlices[ii], this));
