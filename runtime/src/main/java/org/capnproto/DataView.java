@@ -12,6 +12,8 @@ public interface DataView {
 
     int capacity();
 
+    void put(DataView src);
+
     ByteBuffer get(byte[] dst);
 
     byte get(int i);

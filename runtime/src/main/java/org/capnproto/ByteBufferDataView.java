@@ -15,6 +15,14 @@ public class ByteBufferDataView implements DataView {
         return new ByteBufferDataView(ByteBuffer.allocate(i));
     }
 
+    public void put(DataView src) {
+        if (src instanceof ByteBufferDataView) {
+            buffer.put(((ByteBufferDataView) src).buffer);
+        } else {
+            throw new IllegalArgumentException("Unsupported DataView: " + src.getClass());
+        }
+    }
+
     @Override
     public final int capacity() {
         return buffer.capacity();

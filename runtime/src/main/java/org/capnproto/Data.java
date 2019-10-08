@@ -218,7 +218,7 @@ public final class Data {
             }
         }
 
-        public void writeData(int offset, int size, DataView dst,int dstOffset) {
+        public void writeData(int offset, int size, DataView dst, int dstOffset) {
             buffer.write(offset, size, dst, dstOffset);
         }
 
@@ -226,9 +226,9 @@ public final class Data {
 
     public static final class Builder {
 
-        public final DataView buffer;
-        public final int offset; // in bytes
-        public final int size; // in bytes
+        private final DataView buffer;
+        private final int offset; // in bytes
+        private final int size; // in bytes
 
         public Builder() {
             this.buffer = ByteBufferDataView.allocate(0);
@@ -256,6 +256,18 @@ public final class Data {
             dup.position(this.offset);
             dup.get(result, 0, this.size);
             return result;
+        }
+
+        public DataView getBuffer() {
+            return buffer;
+        }
+
+        public int getOffset() {
+            return offset;
+        }
+
+        public int getSize() {
+            return size;
         }
 
         @Override
