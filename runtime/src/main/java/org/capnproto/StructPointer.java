@@ -21,8 +21,6 @@
 
 package org.capnproto;
 
-import java.nio.ByteBuffer;
-
 final class StructPointer{
     public static short dataSize(long ref) {
         // in words.
@@ -37,12 +35,12 @@ final class StructPointer{
         return (int)dataSize(ref) + (int)ptrCount(ref);
     }
 
-    public static void setFromStructSize(ByteBuffer buffer, int offset, StructSize size) {
+    public static void setFromStructSize(DataView buffer, int offset, StructSize size) {
         buffer.putShort(8 * offset + 4, size.data);
         buffer.putShort(8 * offset + 6, size.pointers);
     }
 
-    public static void set(ByteBuffer buffer, int offset, short dataSize, short pointerCount) {
+    public static void set(DataView buffer, int offset, short dataSize, short pointerCount) {
         buffer.putShort(8 * offset + 4, dataSize);
         buffer.putShort(8 * offset + 6, pointerCount);
     }

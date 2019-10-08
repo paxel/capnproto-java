@@ -20,11 +20,9 @@
 // THE SOFTWARE.
 package org.capnproto;
 
-import java.nio.ByteBuffer;
-
 public class SegmentReader implements GenericSegmentReader {
 
-    public final ByteBuffer buffer;
+    public final DataView buffer;
     private final AllocatedArena arena;
     private final int size;
 
@@ -34,7 +32,7 @@ public class SegmentReader implements GenericSegmentReader {
      * @param buffer the data of this segment.
      * @param arena The parent Arena.
      */
-    public SegmentReader(ByteBuffer buffer, AllocatedArena arena) {
+    public SegmentReader(DataView buffer, AllocatedArena arena) {
         this.buffer = buffer;
         buffer.rewind();
         size = buffer.remaining();
@@ -57,7 +55,7 @@ public class SegmentReader implements GenericSegmentReader {
     }
 
     @Override
-    public ByteBuffer getBuffer() {
+    public DataView getBuffer() {
         return buffer;
     }
 

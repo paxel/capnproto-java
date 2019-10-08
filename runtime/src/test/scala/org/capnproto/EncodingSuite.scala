@@ -212,7 +212,7 @@ class EncodingSuite extends FunSuite {
             0,0,0,0,0,0,0,0, // null pointer
             0x68,0x65,0x6c,0x6c,0x6f,0x21,0x21,0) // "hello!!"
 
-    val segment = java.nio.ByteBuffer.wrap(bytes)
+    val segment = ByteBufferDataView.wrap(bytes)
     segment.order(java.nio.ByteOrder.LITTLE_ENDIAN)
     val messageReader = new MessageReader(Array(segment), ReaderOptions.DEFAULT_READER_OPTIONS)
 
@@ -568,7 +568,7 @@ class EncodingSuite extends FunSuite {
                             1,0,0,0, 0x17,0,0,0, 0,0,0,-128, 16,0,0,0,
                             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0)
 
-    val segment = java.nio.ByteBuffer.wrap(bytes)
+    val segment = ByteBufferDataView.wrap(bytes)
     segment.order(java.nio.ByteOrder.LITTLE_ENDIAN)
     val message = new MessageReader(Array(segment), ReaderOptions.DEFAULT_READER_OPTIONS)
 

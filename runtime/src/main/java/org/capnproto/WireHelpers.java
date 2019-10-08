@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 package org.capnproto;
 
-import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 final class WireHelpers {
@@ -864,7 +863,7 @@ final class WireHelpers {
     static Text.Builder setTextPointer(int refOffset,
             GenericSegmentBuilder segment,
             Text.Reader value) {
-        Text.Builder builder = initTextPointer(refOffset, segment, value.size);
+        Text.Builder builder = initTextPointer(refOffset, segment, value.getSize());
 
         builder.copy(value);
         return builder;
@@ -872,7 +871,7 @@ final class WireHelpers {
 
     static Text.Builder getWritableTextPointer(int refOffset,
             GenericSegmentBuilder segment,
-            ByteBuffer defaultBuffer,
+            DataView defaultBuffer,
             int defaultOffset,
             int defaultSize) {
         long ref = segment.get(refOffset);
@@ -925,34 +924,15 @@ final class WireHelpers {
         return new Data.Builder(allocation.segment.getBuffer(), allocation.ptr * Constants.BYTES_PER_WORD, size);
     }
 
-    static Data.Builder setDataPointer(int refOffset,
-            GenericSegmentBuilder segment,
-            Data.Reader value) {
-        Data.Builder builder = initDataPointer(refOffset, segment, value.size);
-
-        if (builder.size > 10) {
-            // bigger data should be copied in bulk.
-            final ByteBuffer slice = value.buffer.slice();
-            slice.position(value.offset);
-            slice.limit(value.offset + builder.size);
-            final int position = builder.buffer.position();
-            builder.buffer.position(builder.offset);
-            builder.buffer.put(slice);
-            builder.buffer.position(position);
-
-        } else {
-            // smaller data should not create an additional bytebuffer and stuff
-            for (int i = 0; i < builder.size; ++i) {
-                builder.buffer.put(builder.offset + i, value.buffer.get(value.offset + i));
-            }
-
-        }
+    static Data.Builder setDataPointer(int refOffset, GenericSegmentBuilder segment, Data.Reader src) {
+        Data.Builder builder = initDataPointer(refOffset, segment, src.getSize());
+        src.writeData(src.getOffset(), src.getSize(), builder.getDataView());
         return builder;
     }
 
     static Data.Builder getWritableDataPointer(int refOffset,
             GenericSegmentBuilder segment,
-            ByteBuffer defaultBuffer,
+            DataView defaultBuffer,
             int defaultOffset,
             int defaultSize) {
         long ref = segment.get(refOffset);
@@ -1134,35 +1114,13 @@ final class WireHelpers {
         }
     }
 
-    private static final byte[] ERAZER = new byte[1024];
+    static void memClear(DataView dstBuffer, int dstByteOffset, int length) {
 
-    static void memClear(ByteBuffer dstBuffer, int dstByteOffset, int length) {
-        int pos = 0;
-        // store the buffer pos
-        int position = dstBuffer.position();
-        // go to the start of the clear area
-        dstBuffer.position(dstByteOffset);
-        final int size = ERAZER.length;
-        while (length > pos + size) {
-            // zero out in ERAZER steps
-            dstBuffer.put(ERAZER);
-            pos += size;
-        }
-        // zero the rest
-        dstBuffer.put(ERAZER, 0, length - pos);
-
-        // reset the buffer pos just to be sure
-        dstBuffer.position(position);
+        dstBuffer.zero(dstByteOffset, length);
     }
 
-    static void memcpy(ByteBuffer dstBuffer, int dstByteOffset, ByteBuffer srcBuffer, int srcByteOffset, int length) {
-        ByteBuffer dstDup = dstBuffer.duplicate();
-        dstDup.position(dstByteOffset);
-        dstDup.limit(dstByteOffset + length);
-        ByteBuffer srcDup = srcBuffer.duplicate();
-        srcDup.position(srcByteOffset);
-        srcDup.limit(srcByteOffset + length);
-        dstDup.put(srcDup);
+    static void memcpy(DataView dstBuffer, int dstByteOffset, DataView srcBuffer, int srcByteOffset, int srcLength) {
+        srcBuffer.write(srcByteOffset, srcLength, dstBuffer, dstByteOffset);
     }
 
     static GenericSegmentBuilder copyPointer(GenericSegmentBuilder dstSegment, int dstOffset,
@@ -1392,7 +1350,7 @@ final class WireHelpers {
 
     static Text.Reader readTextPointer(SegmentDataContainer segment,
             int refOffset,
-            ByteBuffer defaultBuffer,
+            DataView defaultBuffer,
             int defaultOffset,
             int defaultSize) {
         long ref = segment.get(refOffset);

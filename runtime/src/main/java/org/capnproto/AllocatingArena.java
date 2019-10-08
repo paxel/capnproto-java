@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 package org.capnproto;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
@@ -51,7 +50,7 @@ public interface AllocatingArena extends Arena {
      *
      * @return the buffers.
      */
-    ByteBuffer[] getSegmentsForOutput();
+    DataView[] getSegmentsForOutput();
 
     /**
      * Access all currently existing segments.

@@ -18,10 +18,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
 
 public interface FromPointerReaderBlobDefault<T> {
-    T fromPointerReaderBlobDefault(SegmentDataContainer segment, int pointer, java.nio.ByteBuffer defaultBuffer,
-                                   int defaultOffset, int defaultSize);
+
+    T fromPointerReaderBlobDefault(SegmentDataContainer segment, int pointer, DataView defaultBuffer, int defaultOffset, int defaultSize);
 }

@@ -21,7 +21,6 @@
 package org.capnproto;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.WritableByteChannel;
 
@@ -64,26 +63,25 @@ public final class MessageBuilder {
      * Constructs a new MessageBuilder from an Allocator and a given first segment buffer.
      * This is useful for reusing the first segment buffer between messages, to avoid
      * repeated allocations.
-     *
+     * <p>
      * You MUST ensure that firstSegment contains only zeroes before calling this method.
      * If you are reusing firstSegment from another message, then it suffices to call
      * clearFirstSegment() on that message.
      */
-    public MessageBuilder(Allocator allocator, java.nio.ByteBuffer firstSegment) {
+    public MessageBuilder(Allocator allocator, DataView firstSegment) {
         this.arena = new BuilderArena(allocator, firstSegment);
     }
 
     /**
      * Like the previous constructor, but uses a DefaultAllocator.
-     *
+     * <p>
      * You MUST ensure that firstSegment contains only zeroes before calling this method.
      * If you are reusing firstSegment from another message, then it suffices to call
      * clearFirstSegment() on that message.
      */
-    public MessageBuilder(java.nio.ByteBuffer firstSegment) {
+    public MessageBuilder(DataView firstSegment) {
         this.arena = new BuilderArena(new DefaultAllocator(), firstSegment);
     }
-
 
     private AnyPointer.Builder getRootInternal() {
         if (this.arena.getSegments().isEmpty()) {
@@ -154,10 +152,10 @@ public final class MessageBuilder {
     }
 
     public void write(WritableByteChannel outputChannel) throws IOException {
-        ByteBuffer[] segments = this.getArena().getSegmentsForOutput();
+        DataView[] segments = this.getArena().getSegmentsForOutput();
         int tableSize = (segments.length + 2) & (~1);
 
-        ByteBuffer table = ByteBuffer.allocate(4 * tableSize);
+        DataView table = ByteBufferDataView.allocate(4 * tableSize);
         table.order(ByteOrder.LITTLE_ENDIAN);
 
         table.putInt(0, segments.length - 1);
@@ -168,12 +166,12 @@ public final class MessageBuilder {
 
         // Any padding is already zeroed.
         while (table.hasRemaining()) {
-            outputChannel.write(table);
+            table.write(outputChannel);
         }
 
-        for (ByteBuffer buffer : segments) {
+        for (DataView buffer : segments) {
             while (buffer.hasRemaining()) {
-                outputChannel.write(buffer);
+                buffer.write(outputChannel);
             }
         }
     }
@@ -181,7 +179,7 @@ public final class MessageBuilder {
     /**
      * Sets the first segment buffer to contain all zeros so that it can be reused in
      * another message. (See the MessageBuilder(Allocator, ByteBuffer) constructor above.)
-     *
+     * <p>
      * After calling this method, the message will be corrupted. Therefore, you need to make
      * sure to write the message (via getSegmentsForOutput()) before calling this.
      */

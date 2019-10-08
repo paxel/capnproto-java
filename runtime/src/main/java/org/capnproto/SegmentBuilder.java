@@ -29,11 +29,11 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
 
     public int pos = 0; // in words
     public int id = 0;
-    public final ByteBuffer buffer;
+    public final DataView buffer;
     // store the AllocatingArena
     private final AllocatingArena arena;
 
-    public SegmentBuilder(ByteBuffer buf, AllocatingArena arena) {
+    public SegmentBuilder(DataView buf, AllocatingArena arena) {
         this.buffer = buf;
         this.arena = arena;
     }
@@ -83,7 +83,7 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
     }
 
     @Override
-    public ByteBuffer getBuffer() {
+    public DataView getBuffer() {
         return buffer;
     }
 
@@ -93,12 +93,12 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
     }
 
     @Override
-    public ByteBuffer getSegmentForOutput() {
+    public DataView getSegmentForOutput() {
         buffer.rewind();
         ByteBuffer slice = buffer.slice();
         slice.limit(currentSize() * Constants.BYTES_PER_WORD);
         slice.order(ByteOrder.LITTLE_ENDIAN);
-        return slice;
+        return new ByteBufferDataView(slice);
     }
 
     @Override

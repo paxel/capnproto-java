@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 package org.capnproto;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +30,7 @@ public final class ReaderArena implements AllocatedArena {
 
     private final List<GenericSegmentReader> segments;
 
-    public ReaderArena(ByteBuffer[] segmentSlices, long traversalLimitInWords) {
+    public ReaderArena(DataView[] segmentSlices, long traversalLimitInWords) {
         this.limit = traversalLimitInWords;
         this.segments = new ArrayList<>();
         for (int ii = 0; ii < segmentSlices.length; ++ii) {
