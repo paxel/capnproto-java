@@ -4,18 +4,31 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.LongBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * A DataView wrapping a ByteBuffer.
+ */
 public class ByteBufferDataView implements DataView {
-
-    private final ByteBuffer buffer;
 
     public static DataView allocate(int i) {
         return new ByteBufferDataView(ByteBuffer.allocate(i));
     }
 
-    public void put(DataView src) {
+    public static DataView wrap(byte[] bytes) {
+        return new ByteBufferDataView(ByteBuffer.wrap(bytes));
+    }
+
+    private final ByteBuffer buffer;
+
+    public ByteBufferDataView(ByteBuffer buffer) {
+        this.buffer = requireNonNull(buffer, "Parameter buffer can not be null.");
+    }
+
+    @Override
+    public void put(PositionBasedDataView src) {
         if (src instanceof ByteBufferDataView) {
             buffer.put(((ByteBufferDataView) src).buffer);
         } else {
@@ -33,17 +46,9 @@ public class ByteBufferDataView implements DataView {
         return buffer.get();
     }
 
-    public static DataView wrap(byte[] bytes) {
-        return new ByteBufferDataView(ByteBuffer.wrap(bytes));
-    }
-
-    public ByteBufferDataView(ByteBuffer buffer) {
-        this.buffer = requireNonNull(buffer, "Parameter buffer can not be null.");
-    }
-
     @Override
-    public ByteBuffer get(byte[] dst) {
-        return buffer.get(dst);
+    public void get(byte[] dst) {
+        buffer.get(dst);
     }
 
     @Override
@@ -195,6 +200,21 @@ public class ByteBufferDataView implements DataView {
     @Override
     public int limit() {
         return buffer.limit();
+    }
+
+    @Override
+    public int read(ReadableByteChannel source) throws IOException {
+        return source.read(buffer);
+    }
+
+    @Override
+    public int getInt() {
+        return buffer.getInt();
+    }
+
+    @Override
+    public void put(ByteBuffer src) {
+        buffer.put(src);
     }
 
 }

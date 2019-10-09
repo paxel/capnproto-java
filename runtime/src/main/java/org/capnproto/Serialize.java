@@ -111,7 +111,7 @@ public final class Serialize {
      */
     @Deprecated
     public static MessageReader read(ByteBuffer bb, ReaderOptions options) throws IOException {
-        final AllocatedArena arena = new AllocatedArenaBuilder().build(bb);
+        final AllocatedArena arena = new AllocatedArenaBuilder().build(new ByteBufferDataView(bb));
         if (arena == null) {
             return null;
         }

@@ -262,6 +262,10 @@ public final class Data {
             return buffer;
         }
 
+        public void writeData(DataView src, int srcOffset, int offset, int size) {
+            src.write(offset, size, buffer, srcOffset);
+        }
+
         public int getOffset() {
             return offset;
         }

@@ -8,8 +8,8 @@ import java.nio.channels.Channels;
 import java.util.concurrent.TimeUnit;
 import org.capnproto.AllocatedArenaBuilder;
 import org.capnproto.ArrayInputStream;
+import org.capnproto.ByteBufferDataView;
 import org.capnproto.MessageBuilder;
-import org.capnproto.ReaderOptions;
 import org.capnproto.benchmark.CarSalesSchema;
 import org.capnproto.benchmark.DataSchema;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -49,7 +49,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 public class ReadObjectsJmh {
 
     private void read(byte[] bb, Blackhole hole, AllocatedArenaBuilder builder) throws IOException {
-        hole.consume(builder.build(ByteBuffer.wrap(bb)));
+        hole.consume(builder.build(ByteBufferDataView.wrap(bb)));
     }
 
     private void readChannel(byte[] data, Blackhole hole, AllocatedArenaBuilder builder) throws IOException {

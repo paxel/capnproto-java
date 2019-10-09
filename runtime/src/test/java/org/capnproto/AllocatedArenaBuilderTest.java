@@ -2,7 +2,6 @@ package org.capnproto;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.util.List;
 import org.hamcrest.CoreMatchers;
@@ -28,19 +27,19 @@ public class AllocatedArenaBuilderTest {
     @Test
     public void eofByteBufferShouldReturnNull() throws IOException {
 
-        final AllocatedArena arena = new AllocatedArenaBuilder().build(ByteBuffer.wrap((new byte[0])));
+        final AllocatedArena arena = new AllocatedArenaBuilder().build(ByteBufferDataView.wrap((new byte[0])));
         assertThat(arena, is(CoreMatchers.nullValue()));
     }
 
     @Test(expected = java.nio.BufferUnderflowException.class)
     public void oneByteByteBufferShouldThrowException() throws IOException {
 
-        new AllocatedArenaBuilder().build(ByteBuffer.wrap((new byte[1])));
+        new AllocatedArenaBuilder().build(ByteBufferDataView.wrap((new byte[1])));
     }
 
     @Test
     public void readDoubleFarPointer() throws IOException {
-//        
+//
 //  test("DoubleFarPointers") {
 //    val bytes = Array[Byte](2,0,0,0, 1,0,0,0, 2,0,0,0, 1,0,0,0,
 //                            6,0,0,0, 1,0,0,0, 2,0,0,0, 2,0,0,0,
