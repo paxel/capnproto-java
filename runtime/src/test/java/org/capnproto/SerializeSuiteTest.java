@@ -41,12 +41,12 @@ public class SerializeSuiteTest {
         for (int i = 0; i < exampleSegmentCount; i++) {
 
             GenericSegmentReader segment = arena.getSegments().get(i);
-            DataView view = segment.getBuffer();
+            DataView srcView = segment.getBuffer();
 
-            assertThat(view.limit(), is(i * 8));
-            view.rewindReader();
-            while (view.hasRemainingReadableBytes()) {
-                assertThat(view.getByte(), is((byte) i));
+            assertThat(srcView.limit(), is(i * 8));
+            srcView.rewindReader();
+            while (srcView.hasRemainingReadableBytes()) {
+                assertThat(srcView.getByte(), is((byte) i));
             }
         }
     }

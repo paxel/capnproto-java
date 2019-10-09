@@ -155,23 +155,23 @@ public final class MessageBuilder {
         DataView[] segments = this.getArena().getSegmentsForOutput();
         int tableSize = (segments.length + 2) & (~1);
 
-        DataView table = ByteBufferDataView.allocate(4 * tableSize);
-        table.order(ByteOrder.LITTLE_ENDIAN);
+        DataView srcTable = ByteBufferDataView.allocate(4 * tableSize);
+        srcTable.order(ByteOrder.LITTLE_ENDIAN);
 
-        table.putInt(0, segments.length - 1);
+        srcTable.putInt(0, segments.length - 1);
 
         for (int i = 0; i < segments.length; ++i) {
-            table.putInt(4 * (i + 1), segments[i].limit() / 8);
+            srcTable.putInt(4 * (i + 1), segments[i].limit() / 8);
         }
 
         // Any padding is already zeroed.
-        while (table.hasRemainingReadableBytes()) {
-            table.write(outputChannel);
+        while (srcTable.hasRemainingReadableBytes()) {
+            srcTable.write(outputChannel);
         }
 
-        for (DataView buffer : segments) {
-            while (buffer.hasRemainingReadableBytes()) {
-                buffer.write(outputChannel);
+        for (DataView srcData : segments) {
+            while (srcData.hasRemainingReadableBytes()) {
+                srcData.write(outputChannel);
             }
         }
     }

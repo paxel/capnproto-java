@@ -21,6 +21,7 @@
 package org.capnproto;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 public final class Text {
 
@@ -115,29 +116,31 @@ public final class Text {
             return this.size;
         }
 
+        /**
+         * Creates a new ByteBuffer, wrapping the data.
+         *
+         * @return the data.
+         */
         public ByteBuffer asByteBuffer() {
-            ByteBuffer dup = this.buffer.asReadOnlyBuffer();
-            dup.position(this.offset);
-            ByteBuffer result = dup.slice();
-            result.limit(this.size);
+            return ByteBuffer.wrap(toArray());
+        }
+
+        /**
+         * Retrieves the bytes of the Data portion.
+         *
+         * @return the data.
+         */
+        public byte[] toArray() {
+            byte[] result = new byte[size];
+            buffer.readerPosition(offset);
+            buffer.get(result);
             return result;
         }
 
         @Override
         public final String toString() {
-            byte[] bytes = new byte[this.size];
-
-            ByteBuffer dup = this.buffer.duplicate();
-            dup.position(this.offset);
-            dup.get(bytes, 0, this.size);
-
-            try {
-                return new String(bytes, "UTF-8");
-            } catch (java.io.UnsupportedEncodingException e) {
-                throw new CapnProtoException("UTF-8 is unsupported");
-            }
+            return new String(toArray(), Charset.forName("utf-8"));
         }
-
     }
 
     public static final class Builder {
@@ -158,27 +161,30 @@ public final class Text {
             this.size = size;
         }
 
+        /**
+         * Creates a new ByteBuffer, wrapping the data.
+         *
+         * @return the data.
+         */
         public ByteBuffer asByteBuffer() {
-            ByteBuffer dup = this.buffer.duplicate();
-            dup.position(this.offset);
-            ByteBuffer result = dup.slice();
-            result.limit(this.size);
+            return ByteBuffer.wrap(toArray());
+        }
+
+        /**
+         * Retrieves the bytes of the Data portion.
+         *
+         * @return the data.
+         */
+        public byte[] toArray() {
+            byte[] result = new byte[size];
+            buffer.readerPosition(offset);
+            buffer.get(result);
             return result;
         }
 
         @Override
         public final String toString() {
-            byte[] bytes = new byte[this.size];
-
-            ByteBuffer dup = this.buffer.duplicate();
-            dup.position(this.offset);
-            dup.get(bytes, 0, this.size);
-
-            try {
-                return new String(bytes, "UTF-8");
-            } catch (java.io.UnsupportedEncodingException e) {
-                throw new CapnProtoException("UTF-8 is unsupported");
-            }
+            return new String(toArray(), Charset.forName("utf-8"));
         }
 
         void copy(Reader srcReader) {

@@ -3,7 +3,6 @@ package org.capnproto;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.LongBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import static java.util.Objects.requireNonNull;
@@ -136,11 +135,6 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public ByteBuffer asReadOnlyBuffer() {
-        return buffer.asReadOnlyBuffer();
-    }
-
-    @Override
     public void write(int offset, int length, DataView dst, int dstOffset) {
         if (dst instanceof ByteBufferDataView) {
 
@@ -152,6 +146,7 @@ public class ByteBufferDataView implements DataView {
             dst.readerPosition(dstOffset);
             ((ByteBufferDataView) dst).buffer.put(tmpSrc);
         } else {
+            // TODO: slow implementation 
             throw new IllegalArgumentException("Unsupported DataView: " + dst.getClass());
         }
     }
@@ -218,12 +213,26 @@ public class ByteBufferDataView implements DataView {
 
     @Override
     public boolean hasRemainingWriteableBytes() {
-        return buffer.hasRemaining();
+        // no writer index
+        return hasRemainingReadableBytes();
     }
 
     @Override
     public void writerPosition(int dstOffset) {
-        buffer.position(dstOffset);
+        // no writer index
+        readerPosition(dstOffset);
+    }
+
+    @Override
+    public void rewindWriter() {
+        // no writer index
+        rewindReader();
+    }
+
+    @Override
+    public void limitWriteableBytes(int i) {
+        // no writer index
+        limitReadableBytes(i);
     }
 
 }

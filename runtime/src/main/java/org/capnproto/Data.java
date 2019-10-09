@@ -159,17 +159,13 @@ public final class Data {
         }
 
         /**
-         * Creates a new DataView, that shares the Data portion of the message. The new buffer only contains the data portion.
+         * Creates a new ByteBuffer, wrapping the data.
          *
-         * @return a new buffer.
+         * @return the data.
          */
         public ByteBuffer asByteBuffer() {
             checkRecycled();
-            ByteBuffer dup = this.buffer.asReadOnlyBuffer();
-            dup.position(this.offset);
-            ByteBuffer result = dup.slice();
-            result.limit(this.size);
-            return result;
+            return ByteBuffer.wrap(toArray());
         }
 
         /**
@@ -179,11 +175,9 @@ public final class Data {
          */
         public byte[] toArray() {
             checkRecycled();
-            // todo: don't duplicate
-            ByteBuffer dup = this.buffer.duplicate();
-            byte result[] = new byte[this.size];
-            dup.position(this.offset);
-            dup.get(result, 0, this.size);
+            byte[] result = new byte[size];
+            buffer.readerPosition(offset);
+            buffer.get(result);
             return result;
         }
 
@@ -242,19 +236,24 @@ public final class Data {
             this.size = size;
         }
 
+        /**
+         * Creates a new ByteBuffer, wrapping the data.
+         *
+         * @return the data.
+         */
         public ByteBuffer asByteBuffer() {
-            ByteBuffer dup = this.buffer.duplicate();
-            dup.position(this.offset);
-            ByteBuffer result = dup.slice();
-            result.limit(this.size);
-            return result;
+            return ByteBuffer.wrap(toArray());
         }
 
+        /**
+         * Retrieves the bytes of the Data portion.
+         *
+         * @return the data.
+         */
         public byte[] toArray() {
-            ByteBuffer dup = this.buffer.duplicate();
-            byte result[] = new byte[this.size];
-            dup.position(this.offset);
-            dup.get(result, 0, this.size);
+            byte[] result = new byte[size];
+            buffer.readerPosition(offset);
+            buffer.get(result);
             return result;
         }
 

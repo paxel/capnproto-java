@@ -17,9 +17,6 @@ public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyData
     @Deprecated
     ByteBuffer duplicate();
 
-    @Deprecated
-    ByteBuffer asReadOnlyBuffer();
-
     default void zero(int index, int length) {
 
         // TODO write zeroes implementation
@@ -42,4 +39,8 @@ public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyData
     }
 
     public void writerPosition(int dstOffset);
+
+    public void rewindWriter();
+
+    public void limitWriteableBytes(int i);
 }
