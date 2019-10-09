@@ -247,8 +247,8 @@ public class AllocatedArenaBuilder {
      */
     private int fillDataView(ReadableByteChannel source, DataView target) throws IOException {
         int read = 0;
-        while (target.hasRemainingReadableBytes()) {
-            int r = target.read(source);
+        while (target.hasRemainingWriteableBytes()) {
+            int r = target.readFrom(source);
             if (r < 0) {
                 break;
             }

@@ -71,11 +71,6 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public LongBuffer asLongBuffer() {
-        return buffer.asLongBuffer();
-    }
-
-    @Override
     public float getFloat(int i) {
         return buffer.getFloat(i);
     }
@@ -207,7 +202,7 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public int read(ReadableByteChannel source) throws IOException {
+    public int readFrom(ReadableByteChannel source) throws IOException {
         return source.read(buffer);
     }
 

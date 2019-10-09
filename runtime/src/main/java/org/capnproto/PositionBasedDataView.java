@@ -75,7 +75,7 @@ public interface PositionBasedDataView {
      *
      * @throws java.io.IOException in case the source throws it.
      */
-    public int read(ReadableByteChannel source) throws IOException;
+    public int readFrom(ReadableByteChannel source) throws IOException;
 
     /**
      * Retrieve if position is less than limit.

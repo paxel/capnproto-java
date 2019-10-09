@@ -2,7 +2,6 @@ package org.capnproto;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.LongBuffer;
 
 public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyDataView, PositionBasedDataView {
 
@@ -11,9 +10,6 @@ public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyData
     int capacity();
 
     void order(ByteOrder LITTLE_ENDIAN);
-
-    @Deprecated
-    LongBuffer asLongBuffer();
 
     @Deprecated
     ByteBuffer slice();
