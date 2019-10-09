@@ -34,21 +34,21 @@ public interface PositionBasedDataView {
     /**
      * Rewinds this DataView. Sets the position to 0.
      */
-    void rewind();
+    void rewindReader();
 
     /**
      * Retrieve the number of bytes between current position and limit.
      *
      * @return the number of bytes left to either write or read.
      */
-    int remaining();
+    int remainingReadableBytes();
 
     /**
      * Sets the limit of this view.
      *
      * @param limit The new limit
      */
-    void limit(int limit);
+    void limitReadableBytes(int limit);
 
     /**
      * Retrieves the current limit.
@@ -80,16 +80,23 @@ public interface PositionBasedDataView {
     /**
      * Retrieve if position is less than limit.
      *
-     * @return {@code true} if more bytes can be read or written.
+     * @return {@code true} if more bytes can be read.
      */
-    boolean hasRemaining();
+    boolean hasRemainingReadableBytes();
+
+    /**
+     * Retrieve if position is less than limit.
+     *
+     * @return {@code true} if more bytes can be written.
+     */
+    boolean hasRemainingWriteableBytes();
 
     /**
      * Retrieve a byte from current position and advance position by 1.
      *
      * @return the byte.
      */
-    byte get();
+    byte getByte();
 
     /**
      *
@@ -102,14 +109,14 @@ public interface PositionBasedDataView {
      *
      * @return the current position.
      */
-    int position();
+    int readerPosition();
 
     /**
      * Sets a new position.
      *
      * @param pos The new position.
      */
-    void position(int pos);
+    void readerPosition(int pos);
 
     /**
      * Puts the given data at current position and advances the position by the length of the src.

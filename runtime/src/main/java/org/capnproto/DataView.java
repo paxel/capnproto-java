@@ -12,12 +12,16 @@ public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyData
 
     void order(ByteOrder LITTLE_ENDIAN);
 
+    @Deprecated
     LongBuffer asLongBuffer();
 
+    @Deprecated
     ByteBuffer slice();
 
+    @Deprecated
     ByteBuffer duplicate();
 
+    @Deprecated
     ByteBuffer asReadOnlyBuffer();
 
     default void zero(int index, int length) {
@@ -25,9 +29,9 @@ public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyData
         // TODO write zeroes implementation
         int pos = 0;
         // store the buffer pos
-        int position = position();
+        int position = readerPosition();
         // go to the start of the clear area
-        position(index);
+        readerPosition(index);
         final int size = ERAZER.length;
         while (length > pos + size) {
             // zero out in ERAZER steps
@@ -38,6 +42,8 @@ public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyData
         put(ERAZER, 0, length - pos);
 
         // reset the buffer pos just to be sure
-        position(position);
+        readerPosition(position);
     }
+
+    public void writerPosition(int dstOffset);
 }

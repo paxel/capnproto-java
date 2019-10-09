@@ -40,8 +40,8 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
 
     // the total number of words the buffer can hold
     private int capacity() {
-        buffer.rewind();
-        return buffer.remaining() / 8;
+        buffer.rewindReader();
+        return buffer.remainingReadableBytes() / 8;
     }
 
     // return how many words have already been allocated
@@ -94,7 +94,7 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
 
     @Override
     public DataView getSegmentForOutput() {
-        buffer.rewind();
+        buffer.rewindReader();
         ByteBuffer slice = buffer.slice();
         slice.limit(currentSize() * Constants.BYTES_PER_WORD);
         slice.order(ByteOrder.LITTLE_ENDIAN);
@@ -117,7 +117,7 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
         byte[] erazer = new byte[ERAZER_SIZE];
         // write the erazer into buffer until the erazer is too big for the remaining data.
         int current = 0;
-        buffer.position(0);
+        buffer.readerPosition(0);
         while (posInBytes - current > ERAZER_SIZE) {
             buffer.put(erazer);
             current += ERAZER_SIZE;
@@ -125,7 +125,7 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
         // write a fraction of the erazer into the buffer and reset all
         int remaining = posInBytes - current;
         buffer.put(erazer, 0, remaining);
-        buffer.position(0);
+        buffer.readerPosition(0);
         this.pos = 0;
     }
 }

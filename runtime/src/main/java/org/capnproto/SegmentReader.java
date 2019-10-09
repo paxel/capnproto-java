@@ -34,8 +34,8 @@ public class SegmentReader implements GenericSegmentReader {
      */
     public SegmentReader(DataView buffer, AllocatedArena arena) {
         this.buffer = buffer;
-        buffer.rewind();
-        size = buffer.remaining();
+        buffer.rewindReader();
+        size = buffer.remainingReadableBytes();
         this.arena = arena;
     }
 

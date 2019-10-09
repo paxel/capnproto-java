@@ -13,6 +13,10 @@ import static java.util.Objects.requireNonNull;
  */
 public class ByteBufferDataView implements DataView {
 
+    public ByteBuffer getBuffer() {
+        return buffer;
+    }
+
     public static DataView allocate(int i) {
         return new ByteBufferDataView(ByteBuffer.allocate(i));
     }
@@ -42,7 +46,7 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public byte get() {
+    public byte getByte() {
         return buffer.get();
     }
 
@@ -107,12 +111,12 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public void rewind() {
+    public void rewindReader() {
         buffer.rewind();
     }
 
     @Override
-    public int remaining() {
+    public int remainingReadableBytes() {
         return buffer.remaining();
     }
 
@@ -150,7 +154,7 @@ public class ByteBufferDataView implements DataView {
             tmpSrc.position(offset);
             tmpSrc.limit(offset + length);
 
-            dst.position(dstOffset);
+            dst.readerPosition(dstOffset);
             ((ByteBufferDataView) dst).buffer.put(tmpSrc);
         } else {
             throw new IllegalArgumentException("Unsupported DataView: " + dst.getClass());
@@ -158,12 +162,12 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public int position() {
+    public int readerPosition() {
         return buffer.position();
     }
 
     @Override
-    public void position(int pos) {
+    public void readerPosition(int pos) {
         buffer.position(pos);
     }
 
@@ -183,7 +187,7 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public void limit(int i) {
+    public void limitReadableBytes(int i) {
         buffer.limit(i);
     }
 
@@ -193,7 +197,7 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public boolean hasRemaining() {
+    public boolean hasRemainingReadableBytes() {
         return buffer.hasRemaining();
     }
 
@@ -215,6 +219,16 @@ public class ByteBufferDataView implements DataView {
     @Override
     public void put(ByteBuffer src) {
         buffer.put(src);
+    }
+
+    @Override
+    public boolean hasRemainingWriteableBytes() {
+        return buffer.hasRemaining();
+    }
+
+    @Override
+    public void writerPosition(int dstOffset) {
+        buffer.position(dstOffset);
     }
 
 }

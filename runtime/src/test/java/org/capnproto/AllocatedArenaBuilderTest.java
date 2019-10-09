@@ -97,7 +97,7 @@ public class AllocatedArenaBuilderTest {
     }
 
     private static byte[] getSegmentArray(GenericSegmentReader segment) {
-        final byte[] result = new byte[segment.getBuffer().remaining()];
+        final byte[] result = new byte[segment.getBuffer().remainingReadableBytes()];
         segment.getBuffer().get(result);
         return result;
     }
