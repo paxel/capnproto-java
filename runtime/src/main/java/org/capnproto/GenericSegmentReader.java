@@ -26,7 +26,7 @@ package org.capnproto;
  */
 public interface GenericSegmentReader extends SegmentDataContainer {
 
-    GenericSegmentReader EMPTY = new SegmentReader(ByteBufferDataView.wrap(new byte[8]), null);
+    static final GenericSegmentReader EMPTY = new SegmentReader(ByteBufferDataView.wrap(new byte[8]), null);
 
     /**
      * Retrieve the Arena containing all Segments.

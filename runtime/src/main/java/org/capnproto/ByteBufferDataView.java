@@ -6,18 +6,21 @@ import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import static java.util.Objects.requireNonNull;
+import java.util.logging.Logger;
 
 /**
  * A DataView wrapping a ByteBuffer.
  */
 public class ByteBufferDataView implements DataView {
 
-    public ByteBuffer getBuffer() {
-        return buffer;
-    }
+    private static final Logger LOG = Logger.getLogger(ByteBufferDataView.class.getName());
 
     public static ByteBufferDataView allocate(int i) {
         return new ByteBufferDataView(ByteBuffer.allocate(i));
+    }
+
+    public static ByteBufferDataView allocateDirect(int i) {
+        return new ByteBufferDataView(ByteBuffer.allocateDirect(i));
     }
 
     public static ByteBufferDataView wrap(byte[] bytes) {
@@ -30,12 +33,18 @@ public class ByteBufferDataView implements DataView {
         this.buffer = requireNonNull(buffer, "Parameter buffer can not be null.");
     }
 
+    public ByteBuffer getBuffer() {
+        return buffer;
+    }
+
     @Override
     public void put(PositionBasedDataView src) {
         if (src instanceof ByteBufferDataView) {
             buffer.put(((ByteBufferDataView) src).buffer);
         } else {
-            throw new IllegalArgumentException("Unsupported DataView: " + src.getClass());
+            while (src.hasRemainingReadableBytes() && buffer.remaining() > 0) {
+                buffer.put(src.getByte());
+            }
         }
     }
 

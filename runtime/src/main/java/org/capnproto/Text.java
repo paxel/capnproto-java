@@ -89,7 +89,6 @@ public final class Text {
         }
 
         public Reader() {
-            // TODO what about the null terminator?
             this.buffer = ByteBufferDataView.allocate(0);
             this.offset = 0;
             this.size = 0;

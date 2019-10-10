@@ -5,6 +5,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
+import static java.util.Objects.requireNonNull;
 import java.util.function.Function;
 
 public class AllocatedArenaBuilder {
@@ -22,15 +23,23 @@ public class AllocatedArenaBuilder {
             throw new IOException("too many segments");
         }
     }
+    private Function<Integer, DataView> dataViewFactory;
+    private final DataView firstWord;
+    private final DataView segmentSizeHeader;
 
-    // allocate mem for parsing the header once
-    private final DataView firstWord = makeDataView(Constants.BYTES_PER_WORD);
-    private final DataView segmentSizeHeader = makeDataView(Constants.MAX_SEGMENTS * INT_SIZE);
+    public AllocatedArenaBuilder(Function<Integer, DataView> dataViewFactory) {
+        this.dataViewFactory = requireNonNull(dataViewFactory, "Parameter dataViewFactory can not be null.");
+        firstWord = dataViewFactory.apply(Constants.BYTES_PER_WORD);
+        segmentSizeHeader = dataViewFactory.apply(Constants.MAX_SEGMENTS * INT_SIZE);
+    }
+
+    public AllocatedArenaBuilder() {
+        this(AllocatedArenaBuilder::makeDataView);
+    }
 
     private SegmentCountValidator segmentCountValidator = AllocatedArenaBuilder::segmentCountValidator;
     private SegmentReader reader = this::createInternalDataViews;
     private Function<DataView[], AllocatedArena> arenaFactory = SimpleReaderArena::new;
-    private Function<Integer, DataView> dataViewFactory = AllocatedArenaBuilder::makeDataView;
 
     public SegmentCountValidator getSegmentCountValidator() {
         return segmentCountValidator;
