@@ -20,9 +20,6 @@
 // THE SOFTWARE.
 package org.capnproto;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
 public final class SegmentBuilder implements GenericSegmentBuilder {
 
     private static final int ERAZER_SIZE = 8000;
@@ -94,11 +91,9 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
 
     @Override
     public DataView getSegmentForOutput() {
+        buffer.limitReadableBytes(currentSize() * Constants.BYTES_PER_WORD);
         buffer.rewindReader();
-        ByteBuffer slice = buffer.slice();
-        slice.limit(currentSize() * Constants.BYTES_PER_WORD);
-        slice.order(ByteOrder.LITTLE_ENDIAN);
-        return new ByteBufferDataView(slice);
+        return buffer;
     }
 
     @Override

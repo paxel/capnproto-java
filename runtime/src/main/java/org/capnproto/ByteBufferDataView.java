@@ -124,8 +124,8 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public ByteBuffer slice() {
-        return buffer.slice();
+    public ByteBufferDataView slice() {
+        return new ByteBufferDataView(buffer.slice());
     }
 
     @Override
@@ -136,11 +136,6 @@ public class ByteBufferDataView implements DataView {
     @Override
     public void putLong(int i, long l) {
         buffer.putLong(i, l);
-    }
-
-    @Override
-    public ByteBuffer duplicate() {
-        return buffer.duplicate();
     }
 
     @Override

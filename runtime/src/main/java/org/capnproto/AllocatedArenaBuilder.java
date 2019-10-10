@@ -181,13 +181,13 @@ public class AllocatedArenaBuilder {
         }
         DataView[] segmentSlices = new DataView[segmentCount];
         allSegments.rewindReader();
-        segmentSlices[0] = new ByteBufferDataView(allSegments.slice());
+        segmentSlices[0] = allSegments.slice();
         segmentSlices[0].limitReadableBytes(segment0Size * Constants.BYTES_PER_WORD);
         segmentSlices[0].order(ByteOrder.LITTLE_ENDIAN);
         int offset = segment0Size;
         for (int ii = 1; ii < segmentCount; ++ii) {
             allSegments.readerPosition(offset * Constants.BYTES_PER_WORD);
-            segmentSlices[ii] = new ByteBufferDataView(allSegments.slice());
+            segmentSlices[ii] = allSegments.slice();
             segmentSlices[ii].limitReadableBytes(moreSizes.get(ii - 1) * Constants.BYTES_PER_WORD);
             segmentSlices[ii].order(ByteOrder.LITTLE_ENDIAN);
             offset += moreSizes.get(ii - 1);
@@ -231,7 +231,7 @@ public class AllocatedArenaBuilder {
             int segmentSize = bb.getInt(segmentSizesBase + ii * 4);
 
             bb.readerPosition(segmentBase + totalWords * Constants.BYTES_PER_WORD);
-            segmentSlices[ii] = new ByteBufferDataView(bb.slice());
+            segmentSlices[ii] = bb.slice();
             segmentSlices[ii].limitReadableBytes(segmentSize * Constants.BYTES_PER_WORD);
             segmentSlices[ii].order(ByteOrder.LITTLE_ENDIAN);
 
