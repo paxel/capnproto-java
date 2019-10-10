@@ -257,6 +257,11 @@ public final class Data {
             return result;
         }
 
+        /**
+         * Retrieve the internal {@link DataView} of this Data object.
+         *
+         * @return the internal data view.
+         */
         public DataView getBuffer() {
             return buffer;
         }

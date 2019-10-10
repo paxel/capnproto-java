@@ -16,11 +16,11 @@ public class ByteBufferDataView implements DataView {
         return buffer;
     }
 
-    public static DataView allocate(int i) {
+    public static ByteBufferDataView allocate(int i) {
         return new ByteBufferDataView(ByteBuffer.allocate(i));
     }
 
-    public static DataView wrap(byte[] bytes) {
+    public static ByteBufferDataView wrap(byte[] bytes) {
         return new ByteBufferDataView(ByteBuffer.wrap(bytes));
     }
 
@@ -146,7 +146,7 @@ public class ByteBufferDataView implements DataView {
             dst.readerPosition(dstOffset);
             ((ByteBufferDataView) dst).buffer.put(tmpSrc);
         } else {
-            // TODO: slow implementation 
+            // TODO: slow implementation
             throw new IllegalArgumentException("Unsupported DataView: " + dst.getClass());
         }
     }
