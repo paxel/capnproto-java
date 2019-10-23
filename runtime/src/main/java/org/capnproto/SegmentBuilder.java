@@ -91,9 +91,10 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
 
     @Override
     public DataView getSegmentForOutput() {
-        buffer.limitReadableBytes(currentSize() * Constants.BYTES_PER_WORD);
-        buffer.rewindReader();
-        return buffer;
+        DataView slice = buffer.slice();
+        slice.rewindReader();
+        slice.limitReadableBytes(currentSize() * Constants.BYTES_PER_WORD);
+        return slice;
     }
 
     @Override

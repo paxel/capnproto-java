@@ -143,11 +143,11 @@ public class ByteBufferDataView implements DataView {
         if (dst instanceof ByteBufferDataView) {
 
             // create a limited bb
-            ByteBuffer tmpSrc = buffer.duplicate();
+            ByteBuffer tmpSrc = buffer.slice();
             tmpSrc.position(offset);
             tmpSrc.limit(offset + length);
 
-            dst.readerPosition(dstOffset);
+            ((ByteBufferDataView) dst).buffer.position(dstOffset);
             ((ByteBufferDataView) dst).buffer.put(tmpSrc);
         } else {
             // TODO: slow implementation

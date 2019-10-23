@@ -262,12 +262,13 @@ public final class Data {
          *
          * @return the internal data view.
          */
+        @Deprecated
         public DataView getBuffer() {
             return buffer;
         }
 
         public void writeData(DataView src, int srcOffset, int offset, int size) {
-            src.write(offset, size, buffer, srcOffset);
+            src.write(srcOffset, size, buffer, offset);
         }
 
         public int getOffset() {
