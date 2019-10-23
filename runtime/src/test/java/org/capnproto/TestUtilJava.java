@@ -1,6 +1,10 @@
 package org.capnproto;
 
+import java.io.UnsupportedEncodingException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.capnproto.test.Test;
+import org.capnproto.test.Test.TestDefaults;
 import org.capnproto.test.Test.TestEnum;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -243,5 +247,119 @@ public class TestUtilJava {
         assertThat(enumList.get(0), is((TestEnum.FOO)));
         assertThat(enumList.get(1), is((TestEnum.GARPLY)));
     }
+
+    public static void checkDefaultMessage(TestDefaults.Builder builder) {
+        builder.getVoidField();
+        assertThat(builder.getBoolField(), is(true));
+        assertThat(builder.getInt8Field(), is((byte)-123));
+        assertThat(builder.getInt16Field(), is((short)-12345));
+        assertThat(builder.getInt32Field(), is(-12345678));;
+        assertThat(builder.getInt64Field(), is(-123456789012345L));;
+        assertThat(builder.getUInt8Field(), is((byte) 0xea));;
+        assertThat(builder.getUInt16Field(), is((short) 45678));;
+        assertThat(builder.getUInt32Field(), is(0xce0a6a14));;
+        assertThat(builder.getUInt64Field(), is(0xab54a98ceb1f0ad2L));;
+        assertThat(builder.getFloat32Field(), is(1234.5f));;
+        assertThat(builder.getFloat64Field(), is(-123e45));;
+        assertThat(builder.getEnumField(), is(TestEnum.CORGE));;
+
+        assertThat((builder.getTextField().toString()), is("foo"));
+        assertThat((builder.getDataField().toArray()), is(new byte[]{0x62, 0x61, 0x72}));
+    }
+
+    public static void checkDefaultMessage(TestDefaults.Reader reader) {
+        reader.getVoidField();
+        assertThat(reader.getBoolField(), is(true));
+        assertThat(reader.getInt8Field(), is((byte)-123));
+        assertThat(reader.getInt16Field(), is((short)-12345));
+        assertThat(reader.getInt32Field(), is(-12345678));
+        assertThat(reader.getInt64Field(), is(-123456789012345L));
+        assertThat(reader.getUInt8Field(), is((byte) 0xea));
+        assertThat(reader.getUInt16Field(), is((short) 45678));
+        assertThat(reader.getUInt32Field(), is(0xce0a6a14));
+        assertThat(reader.getUInt64Field(), is(0xab54a98ceb1f0ad2L));
+        assertThat(reader.getFloat32Field(), is(1234.5f));
+        assertThat(reader.getFloat64Field(), is(-123e45));
+        assertThat((reader.getTextField().toString()), is("foo"));
+        assertThat((reader.getDataField().toArray()), is(new byte[]{0x62, 0x61, 0x72}));
+
+        {
+            Test.TestAllTypes.Reader subReader = reader.getStructField();
+            subReader.getVoidField();
+            assertThat((subReader.getBoolField()), is(true));
+            assertThat((subReader.getInt8Field()), is((byte)-12));
+            assertThat((subReader.getInt16Field()), is((short)3456));
+            assertThat((subReader.getInt32Field()), is(-78901234));
+            // ...
+            assertThat((subReader.getTextField().toString()), is("baz"));
+
+            {
+                Test.TestAllTypes.Reader subSubReader = subReader.getStructField();
+                assertThat((subSubReader.getTextField().toString()), is("nested"));
+            }
+
+        }
+
+        assertThat((reader.getEnumField()), is(TestEnum.CORGE));
+
+        assertThat((reader.getVoidList().size()), is(6));
+
+        {
+            PrimitiveList.Boolean.Reader listReader = reader.getBoolList();
+            assertThat((listReader.size()), is(4));
+            assertThat((listReader.get(0)), is(true));
+            assertThat((listReader.get(1)), is(false));
+            assertThat((listReader.get(2)), is(false));
+            assertThat((listReader.get(3)), is(true));
+        }
+
+        {
+            PrimitiveList.Byte.Reader listReader = reader.getInt8List();
+            assertThat((listReader.size()), is(2));
+            assertThat((listReader.get(0)), is((byte)111));
+            assertThat((listReader.get(1)), is((byte)-111));
+        }
+
+    }
+
+    public static void setDefaultMessage(TestDefaults.Builder builder) {
+        builder.setBoolField(false);
+        builder.setInt8Field((byte) -122);
+        builder.setInt16Field((short) -12344);
+        builder.setInt32Field(-12345677);
+        builder.setInt64Field(-123456789012344L);
+        builder.setUInt8Field((byte) 0xe9);
+        builder.setUInt16Field((short) 45677);
+        builder.setUInt32Field(0xce0a6a13);
+        builder.setUInt64Field(0xab54a98ceb1f0ad1L);
+        builder.setFloat32Field(1234.4f);
+        builder.setFloat64Field(-123e44);
+        builder.setTextField(new Text.Reader("bar"));
+        builder.setEnumField(TestEnum.QUX);
+    }
+
+    public static void checkSettedDefaultMessage(TestDefaults.Reader reader) {
+        assertThat(reader.getBoolField(), is(false));
+        assertThat(reader.getInt8Field(), is((byte)-122));
+        assertThat(reader.getInt16Field(), is((short)-12344));
+        assertThat(reader.getInt32Field(), is(-12345677));
+        assertThat(reader.getInt64Field(), is(-123456789012344L));
+        assertThat(reader.getUInt8Field(), is((byte) 0xe9));
+        assertThat(reader.getUInt16Field(), is((short) 45677));
+        assertThat(reader.getUInt32Field(), is(0xce0a6a13));
+        assertThat(reader.getUInt64Field(), is(0xab54a98ceb1f0ad1L));
+        assertThat(reader.getFloat32Field(), is(1234.4f));
+        assertThat(reader.getFloat64Field(), is(-123e44));
+        assertThat(reader.getEnumField(), is(TestEnum.QUX));
+    }
+
+    public static byte[] data(String str) {
+        try {
+            return str.getBytes(ENCODING);
+        } catch (UnsupportedEncodingException ex) {
+            throw new RuntimeException("Could not get bytes for encoding: " + ENCODING);
+        }
+    }
+    private static final String ENCODING = "ISO_8859-1";
 
 }
