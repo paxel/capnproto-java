@@ -104,7 +104,7 @@ public class AllocatedArenaBuilder {
      * @throws IOException if reading was impossible or input data invalid.
      */
     public DataView readFrame(ReadableByteChannel bc) throws IOException {
-        firstWord.rewindReader();
+        firstWord.rewindWriterPosition();
         int read = fillDataView(bc, firstWord);
         if (read == 0) {
             // EOF at the beginning
@@ -118,9 +118,9 @@ public class AllocatedArenaBuilder {
         int totalWords = segment0Size;
         segmentCountValidator.validate(segmentCount);
         // in words
-        segmentSizeHeader.rewindReader();
+        segmentSizeHeader.rewindWriterPosition();
         final int segmentSizeHeaderSize = 4 * (segmentCount & ~1);
-        segmentSizeHeader.limitReadableBytes(segmentSizeHeaderSize);
+        segmentSizeHeader.limit(segmentSizeHeaderSize);
         read = fillDataView(bc, segmentSizeHeader);
         if (read < segmentSizeHeaderSize) {
             throw new IOException("Incomplete data: EOF after " + read + Constants.BYTES_PER_WORD);
@@ -131,22 +131,22 @@ public class AllocatedArenaBuilder {
 
         DataView frame = dataViewFactory.apply(totalWords * Constants.BYTES_PER_WORD + segmentSizeHeaderSize + Constants.BYTES_PER_WORD);
         // write first word
-        firstWord.rewindReader();
+        firstWord.rewindWriterPosition();
         frame.put(firstWord);
         // write additional sizes
-        segmentSizeHeader.rewindReader();
+        segmentSizeHeader.rewindWriterPosition();
         frame.put(segmentSizeHeader);
         // read remaining stuff or fail
         read = fillDataView(bc, frame);
         if (read < totalWords * Constants.BYTES_PER_WORD) {
             throw new IOException("Incomplete data: EOF after " + read + segmentSizeHeaderSize + Constants.BYTES_PER_WORD);
         }
-        frame.rewindReader();
+        frame.rewindReaderPosition();
         return frame;
     }
 
     private DataView[] createInternalDataViews(ReadableByteChannel bc) throws IOException {
-        firstWord.rewindReader();
+        firstWord.rewindWriterPosition();
         int read = fillDataView(bc, firstWord);
         if (read == 0) {
             // EOF at the beginning
@@ -161,9 +161,9 @@ public class AllocatedArenaBuilder {
         segmentCountValidator.validate(segmentCount);
         // in words
         List<Integer> moreSizes = new ArrayList<>();
-        segmentSizeHeader.rewindReader();
+        segmentSizeHeader.rewindWriterPosition();
         final int segmentSizeHeaderSize = 4 * (segmentCount & ~1);
-        segmentSizeHeader.limitReadableBytes(segmentSizeHeaderSize);
+        segmentSizeHeader.limit(segmentSizeHeaderSize);
         read = fillDataView(bc, segmentSizeHeader);
         if (read < segmentSizeHeaderSize) {
             throw new IOException("Incomplete data: EOF after " + read + Constants.BYTES_PER_WORD);
@@ -180,16 +180,14 @@ public class AllocatedArenaBuilder {
             throw new IOException("Incomplete data: EOF after " + read + segmentSizeHeaderSize + Constants.BYTES_PER_WORD);
         }
         DataView[] segmentSlices = new DataView[segmentCount];
-        allSegments.rewindReader();
+        allSegments.rewindReaderPosition();
         segmentSlices[0] = allSegments.slice();
-        segmentSlices[0].limitReadableBytes(segment0Size * Constants.BYTES_PER_WORD);
-        segmentSlices[0].order(ByteOrder.LITTLE_ENDIAN);
+        segmentSlices[0].limit(segment0Size * Constants.BYTES_PER_WORD);
         int offset = segment0Size;
         for (int ii = 1; ii < segmentCount; ++ii) {
             allSegments.readerPosition(offset * Constants.BYTES_PER_WORD);
             segmentSlices[ii] = allSegments.slice();
-            segmentSlices[ii].limitReadableBytes(moreSizes.get(ii - 1) * Constants.BYTES_PER_WORD);
-            segmentSlices[ii].order(ByteOrder.LITTLE_ENDIAN);
+            segmentSlices[ii].limit(moreSizes.get(ii - 1) * Constants.BYTES_PER_WORD);
             offset += moreSizes.get(ii - 1);
         }
         return segmentSlices;
@@ -232,8 +230,7 @@ public class AllocatedArenaBuilder {
 
             bb.readerPosition(segmentBase + totalWords * Constants.BYTES_PER_WORD);
             segmentSlices[ii] = bb.slice();
-            segmentSlices[ii].limitReadableBytes(segmentSize * Constants.BYTES_PER_WORD);
-            segmentSlices[ii].order(ByteOrder.LITTLE_ENDIAN);
+            segmentSlices[ii].limit(segmentSize * Constants.BYTES_PER_WORD);
 
             totalWords += segmentSize;
         }

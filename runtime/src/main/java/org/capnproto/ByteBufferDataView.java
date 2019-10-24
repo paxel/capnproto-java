@@ -6,14 +6,11 @@ import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import static java.util.Objects.requireNonNull;
-import java.util.logging.Logger;
 
 /**
  * A DataView wrapping a ByteBuffer.
  */
 public class ByteBufferDataView implements DataView {
-
-    private static final Logger LOG = Logger.getLogger(ByteBufferDataView.class.getName());
 
     public static ByteBufferDataView allocate(int i) {
         return new ByteBufferDataView(ByteBuffer.allocate(i));
@@ -114,7 +111,7 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public void rewindReader() {
+    public void rewindReaderPosition() {
         buffer.rewind();
     }
 
@@ -125,7 +122,9 @@ public class ByteBufferDataView implements DataView {
 
     @Override
     public ByteBufferDataView slice() {
-        return new ByteBufferDataView(buffer.slice());
+        final ByteBufferDataView result = new ByteBufferDataView(buffer.slice());
+        result.order(buffer.order());
+        return result;
     }
 
     @Override
@@ -139,20 +138,39 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public void write(int offset, int length, DataView dst, int dstOffset) {
+    public void writeTo(DataView dst, int dstOffset, int srcOffset, int length) {
         if (dst instanceof ByteBufferDataView) {
 
-            // create a limited bb
-            ByteBuffer tmpSrc = buffer.slice();
-            tmpSrc.position(offset);
-            tmpSrc.limit(offset + length);
+            // we temporary limit our buffer. we have to reset that later
+            int srcLimit = buffer.limit();
+            buffer.position(srcOffset);
+            buffer.limit(srcOffset + length);
 
-            ((ByteBufferDataView) dst).buffer.position(dstOffset);
-            ((ByteBufferDataView) dst).buffer.put(tmpSrc);
+            ByteBuffer tmpDst = getDstByteBuffer(dst);
+            // we extend the limit here. Deal with it.
+            if (tmpDst.limit() <= dstOffset) {
+                tmpDst.limit(dstOffset + length);
+            }
+            tmpDst.position(dstOffset);
+            tmpDst.put(buffer);
+            buffer.limit(srcLimit);
         } else {
-            // TODO: slow implementation
-            throw new IllegalArgumentException("Unsupported DataView: " + dst.getClass());
+            for (int i = 0; i < length; i++) {
+                dst.put(i + dstOffset, buffer.get(i + srcOffset));
+            }
+
         }
+    }
+
+    private ByteBuffer getDstByteBuffer(DataView dst) {
+        ByteBuffer tmpDst = ((ByteBufferDataView) dst).buffer;
+        if (tmpDst == buffer) {
+            // if the data is to be written into the same ByteBuffer, we have to duplicate it.
+            final ByteBuffer duplicate = tmpDst.duplicate();
+            duplicate.order(tmpDst.order());
+            return duplicate;
+        }
+        return tmpDst;
     }
 
     @Override
@@ -181,12 +199,15 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public void limitReadableBytes(int i) {
+    public void limit(int i) {
+        if (buffer.position() > i) {
+            buffer.position(i);
+        }
         buffer.limit(i);
     }
 
     @Override
-    public void write(WritableByteChannel outputChannel) throws IOException {
+    public void writeTo(WritableByteChannel outputChannel) throws IOException {
         outputChannel.write(buffer);
     }
 
@@ -228,15 +249,16 @@ public class ByteBufferDataView implements DataView {
     }
 
     @Override
-    public void rewindWriter() {
+    public void rewindWriterPosition() {
         // no writer index
-        rewindReader();
+        rewindReaderPosition();
     }
 
     @Override
-    public void limitWriteableBytes(int i) {
-        // no writer index
-        limitReadableBytes(i);
+    public DataView duplicate() {
+        final ByteBufferDataView result = new ByteBufferDataView(buffer.duplicate());
+        result.order(buffer.order());
+        return result;
     }
 
 }

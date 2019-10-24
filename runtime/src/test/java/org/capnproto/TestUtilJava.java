@@ -1,8 +1,6 @@
 package org.capnproto;
 
 import java.io.UnsupportedEncodingException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.capnproto.test.Test;
 import org.capnproto.test.Test.TestDefaults;
 import org.capnproto.test.Test.TestEnum;
@@ -251,8 +249,8 @@ public class TestUtilJava {
     public static void checkDefaultMessage(TestDefaults.Builder builder) {
         builder.getVoidField();
         assertThat(builder.getBoolField(), is(true));
-        assertThat(builder.getInt8Field(), is((byte)-123));
-        assertThat(builder.getInt16Field(), is((short)-12345));
+        assertThat(builder.getInt8Field(), is((byte) -123));
+        assertThat(builder.getInt16Field(), is((short) -12345));
         assertThat(builder.getInt32Field(), is(-12345678));;
         assertThat(builder.getInt64Field(), is(-123456789012345L));;
         assertThat(builder.getUInt8Field(), is((byte) 0xea));;
@@ -270,8 +268,8 @@ public class TestUtilJava {
     public static void checkDefaultMessage(TestDefaults.Reader reader) {
         reader.getVoidField();
         assertThat(reader.getBoolField(), is(true));
-        assertThat(reader.getInt8Field(), is((byte)-123));
-        assertThat(reader.getInt16Field(), is((short)-12345));
+        assertThat(reader.getInt8Field(), is((byte) -123));
+        assertThat(reader.getInt16Field(), is((short) -12345));
         assertThat(reader.getInt32Field(), is(-12345678));
         assertThat(reader.getInt64Field(), is(-123456789012345L));
         assertThat(reader.getUInt8Field(), is((byte) 0xea));
@@ -287,8 +285,8 @@ public class TestUtilJava {
             Test.TestAllTypes.Reader subReader = reader.getStructField();
             subReader.getVoidField();
             assertThat((subReader.getBoolField()), is(true));
-            assertThat((subReader.getInt8Field()), is((byte)-12));
-            assertThat((subReader.getInt16Field()), is((short)3456));
+            assertThat((subReader.getInt8Field()), is((byte) -12));
+            assertThat((subReader.getInt16Field()), is((short) 3456));
             assertThat((subReader.getInt32Field()), is(-78901234));
             // ...
             assertThat((subReader.getTextField().toString()), is("baz"));
@@ -316,8 +314,8 @@ public class TestUtilJava {
         {
             PrimitiveList.Byte.Reader listReader = reader.getInt8List();
             assertThat((listReader.size()), is(2));
-            assertThat((listReader.get(0)), is((byte)111));
-            assertThat((listReader.get(1)), is((byte)-111));
+            assertThat((listReader.get(0)), is((byte) 111));
+            assertThat((listReader.get(1)), is((byte) -111));
         }
 
     }
@@ -340,8 +338,8 @@ public class TestUtilJava {
 
     public static void checkSettedDefaultMessage(TestDefaults.Reader reader) {
         assertThat(reader.getBoolField(), is(false));
-        assertThat(reader.getInt8Field(), is((byte)-122));
-        assertThat(reader.getInt16Field(), is((short)-12344));
+        assertThat(reader.getInt8Field(), is((byte) -122));
+        assertThat(reader.getInt16Field(), is((short) -12344));
         assertThat(reader.getInt32Field(), is(-12345677));
         assertThat(reader.getInt64Field(), is(-123456789012344L));
         assertThat(reader.getUInt8Field(), is((byte) 0xe9));

@@ -70,6 +70,6 @@ public interface RandomAccessDataView {
      * @param dstDataView The destination data view
      * @param dstIndex    The destination index where to write the Data.
      */
-    void write(int index, int length, DataView dstDataView, int dstIndex);
+    void writeTo(DataView dstDataView, int dstIndex, int index, int length);
 
 }

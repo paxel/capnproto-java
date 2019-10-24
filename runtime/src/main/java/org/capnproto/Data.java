@@ -213,7 +213,7 @@ public final class Data {
         }
 
         public void writeData(int offset, int size, DataView dst, int dstOffset) {
-            buffer.write(offset, size, dst, dstOffset);
+            buffer.writeTo(dst, dstOffset, offset, size);
         }
 
     }
@@ -268,7 +268,7 @@ public final class Data {
         }
 
         public void writeData(DataView src, int srcOffset, int offset, int size) {
-            src.write(srcOffset, size, buffer, offset);
+            src.writeTo(buffer, offset, srcOffset, size);
         }
 
         public int getOffset() {

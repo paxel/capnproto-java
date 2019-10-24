@@ -44,7 +44,7 @@ public class SerializeSuiteTest {
             DataView srcView = segment.getBuffer();
 
             assertThat(srcView.limit(), is(i * 8));
-            srcView.rewindReader();
+            srcView.rewindReaderPosition();
             while (srcView.hasRemainingReadableBytes()) {
                 assertThat(srcView.getByte(), is((byte) i));
             }

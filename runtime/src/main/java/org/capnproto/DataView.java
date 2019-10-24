@@ -6,10 +6,26 @@ public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyData
 
     static final byte[] ERAZER = new byte[1024];
 
+    /**
+     * Retrieves the maximum data in this view.
+     *
+     * @return the maximum number of bytes in this View.
+     */
     int capacity();
 
-    void order(ByteOrder LITTLE_ENDIAN);
+    /**
+     * Set the order of this DataView and all DataViews that are generated from this. If not set, the ByteOrder is BIG ENDIAN.
+     *
+     * @param order the byte order.
+     */
+    void order(ByteOrder order);
 
+    /**
+     * Creates a new DataView that has the same endianess as this DataView and starts from this DataViews current position.
+     * The data is shared, the positions and limit not.
+     *
+     * @return a new DataView.
+     */
     DataView slice();
 
     default void zero(int index, int length) {
@@ -33,9 +49,11 @@ public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyData
         readerPosition(position);
     }
 
-    public void writerPosition(int dstOffset);
-
-    public void rewindWriter();
-
-    public void limitWriteableBytes(int i);
+    /**
+     * Creates a new DataView that has the same endianess, reader and writer position and limit as this DataView.
+     * The data is shared, the positions and limit not.
+     *
+     * @return a new DataView.
+     */
+    public DataView duplicate();
 }

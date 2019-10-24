@@ -29,16 +29,12 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
     public final DataView buffer;
     // store the AllocatingArena
     private final AllocatingArena arena;
+    private final int capacity;
 
     public SegmentBuilder(DataView buf, AllocatingArena arena) {
         this.buffer = buf;
         this.arena = arena;
-    }
-
-    // the total number of words the buffer can hold
-    private int capacity() {
-        buffer.rewindReader();
-        return buffer.remainingReadableBytes() / 8;
+        this.capacity = buffer.capacity() / Constants.BYTES_PER_WORD;
     }
 
     // return how many words have already been allocated
@@ -54,7 +50,7 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
     public final int allocate(int amount) {
         assert amount >= 0 : "tried to allocate a negative number of words";
 
-        if (amount > this.capacity() - this.currentSize()) {
+        if (amount > this.capacity - this.currentSize()) {
             return FAILED_ALLOCATION; // no space left;
         } else {
             int result = this.pos;
@@ -91,10 +87,10 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
 
     @Override
     public DataView getSegmentForOutput() {
-        DataView slice = buffer.slice();
-        slice.rewindReader();
-        slice.limitReadableBytes(currentSize() * Constants.BYTES_PER_WORD);
-        return slice;
+        DataView duplicate = buffer.duplicate();
+        duplicate.rewindReaderPosition();
+        duplicate.limit(currentSize() * Constants.BYTES_PER_WORD);
+        return duplicate;
     }
 
     @Override

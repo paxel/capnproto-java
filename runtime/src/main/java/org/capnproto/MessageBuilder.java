@@ -166,12 +166,12 @@ public final class MessageBuilder {
 
         // Any padding is already zeroed.
         while (srcTable.hasRemainingReadableBytes()) {
-            srcTable.write(outputChannel);
+            srcTable.writeTo(outputChannel);
         }
 
         for (DataView srcData : segments) {
             while (srcData.hasRemainingReadableBytes()) {
-                srcData.write(outputChannel);
+                srcData.writeTo(outputChannel);
             }
         }
     }

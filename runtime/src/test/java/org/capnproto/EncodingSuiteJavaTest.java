@@ -1,7 +1,9 @@
 package org.capnproto;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 import static org.capnproto.test.Test.GLOBAL_INT;
+import org.capnproto.test.Test.GenericMap;
 import org.capnproto.test.Test.TestAllTypes;
 import org.capnproto.test.Test.TestAnyPointer;
 import org.capnproto.test.Test.TestConstants;
@@ -15,6 +17,7 @@ import org.capnproto.test.Test.TestNewVersion;
 import org.capnproto.test.Test.TestOldVersion;
 import org.capnproto.test.Test.TestUnion;
 import org.capnproto.test.Test.TestUseGenerics;
+import org.capnproto.test.TestImport;
 import static org.hamcrest.CoreMatchers.is;
 import org.junit.Assert;
 import static org.junit.Assert.assertThat;
@@ -98,7 +101,6 @@ public class EncodingSuiteJavaTest {
         TestUtilJava.checkTestMessage(reader);
     }
 
-    @Ignore // TODO: fix
     @Test
     public void testZeroing() {
         MessageBuilder message = new MessageBuilder();
@@ -123,7 +125,7 @@ public class EncodingSuiteJavaTest {
         DataView[] segments = message.getArena().getSegmentsForOutput();
         for (DataView segment : segments) {
             for (int jj = 0; jj < segment.limit() - 1; jj++) {
-                assertThat(segment.get(jj), is(0));
+                assertThat(segment.get(jj), is((byte) 0));
             }
         }
     }
@@ -205,7 +207,6 @@ public class EncodingSuiteJavaTest {
         }
     }
 
-    @Ignore //TODO: fix
     @Test
     public void testStructListUpgrade() {
         MessageBuilder message = new MessageBuilder();
@@ -213,6 +214,7 @@ public class EncodingSuiteJavaTest {
         AnyPointer.Builder any = root.getAnyPointerField();
 
         {
+            // set primitive list builder
             PrimitiveList.Long.Builder longs = any.initAs(PrimitiveList.Long.factory, 3);
             longs.set(0, 123);
             longs.set(1, 456);
@@ -220,6 +222,7 @@ public class EncodingSuiteJavaTest {
         }
 
         {
+            // get builder as reader and verify same content
             StructList.Reader<TestOldVersion.Reader> olds = any.asReader().getAs(TestOldVersion.listFactory);
             assertThat(olds.get(0).getOld1(), is(123L));
             assertThat(olds.get(1).getOld1(), is(456L));
@@ -227,6 +230,7 @@ public class EncodingSuiteJavaTest {
         }
 
         {
+            // get builder of new version and modify again
             StructList.Builder<TestOldVersion.Builder> olds = any.getAs(TestOldVersion.listFactory);
             assertThat(olds.size(), is(3));
             assertThat(olds.get(0).getOld1(), is(123L));
@@ -241,18 +245,17 @@ public class EncodingSuiteJavaTest {
         {
             StructList.Builder<TestNewVersion.Builder> news = any.getAs(TestNewVersion.listFactory);
             assertThat(news.size(), is(3));
-            assertThat(news.get(0).getOld1(), is(123));
+            assertThat(news.get(0).getOld1(), is(123L));
             assertThat(news.get(0).getOld2().toString(), is("zero"));
 
-            assertThat(news.get(1).getOld1(), is(456));
+            assertThat(news.get(1).getOld1(), is(456L));
             assertThat(news.get(1).getOld2().toString(), is("one"));
 
-            assertThat(news.get(2).getOld1(), is(789));
+            assertThat(news.get(2).getOld1(), is(789L));
             assertThat(news.get(2).getOld2().toString(), is("two"));
         }
     }
 
-    @Ignore // TODO: fix
     @Test
     public void testStructListUpgradeDoubleFar() {
         byte[] bytes = new byte[]{
@@ -282,14 +285,14 @@ public class EncodingSuiteJavaTest {
 
         StructList.Builder<TestNewVersion.Builder> newVersion = message.getRoot(new StructList.Factory<>(TestNewVersion.factory));
         assertThat(newVersion.size(), is(1));
-        assertThat(newVersion.get(0).getOld1(), is(91));
+        assertThat(newVersion.get(0).getOld1(), is(91L));
         assertThat(newVersion.get(0).getOld2().toString(), is("hello!!"));
 
         DataView[] segments1 = message.getArena().getSegmentsForOutput();
         assertThat(segments[0].limit(), is(6 * 8));
         for (int ii = 8; ii < (5 * 8) - 1; ii++) {
             // Check the the old list, including the tag, was zeroed.
-            assertThat(segments[0].get(ii), is(0));
+            assertThat(segments[0].get(ii), is((byte) 0));
         }
     }
 
@@ -409,7 +412,6 @@ public class EncodingSuiteJavaTest {
         assertThat(barReader.get(0), is((byte) 11));
     }
 
-    @Ignore // TODO: fix
     @Test
     public void testUseGenerics() {
         MessageBuilder message = new MessageBuilder();
@@ -656,7 +658,6 @@ public class EncodingSuiteJavaTest {
         }
     }
 
-    @Ignore // TODO: fix
     @Test
     public void testVoidListAmplification() {
         MessageBuilder builder = new MessageBuilder();
@@ -673,7 +674,6 @@ public class EncodingSuiteJavaTest {
         }
     }
 
-    @Ignore // TODO: fix
     @Test
     public void testEmptyStructListAmplification() {
         MessageBuilder builder = new MessageBuilder();
@@ -689,239 +689,232 @@ public class EncodingSuiteJavaTest {
         } catch (DecodeException e) {
         }
     }
-    /*
 
+    @Test
     public void testLongUint8List() {
         {
             MessageBuilder message = new MessageBuilder();
-            allTypes = message.initRoot(TestAllTypes.factory)
-            length = (1 << 28) + 1
-            list = allTypes.initUInt8List(length)
-            assertThat(list.size(), is(length
-            )
-            list.set(length - 1, 3)
-            assertThat(list.get(length - 1), is(3)
-            assertThat(allTypes.asReader().getUInt8List().get(length - 1), is(3)
+            TestAllTypes.Builder allTypes = message.initRoot(TestAllTypes.factory);
+            int length = ((1 << 28) + 1);
+            PrimitiveList.Byte.Builder list = allTypes.initUInt8List(length);
+            assertThat(list.size(), is(length));
+            list.set(length - 1, (byte) 3);
+            assertThat(list.get(length - 1), is((byte) 3));
+            assertThat(allTypes.asReader().getUInt8List().get(length - 1), is((byte) 3));
         }
     }
 
+    @Test
     public void testLongUint16List() {
         {
             MessageBuilder message = new MessageBuilder();
-            allTypes = message.initRoot(TestAllTypes.factory)
-            length = (1 << 27) + 1
-            list = allTypes.initUInt16List(length)
-            assertThat(list.size(), is(length
-            )
-            list.set(length - 1, 3)
-            assertThat(list.get(length - 1), is(3)
-            assertThat(allTypes.asReader().getUInt16List().get(length - 1), is(3)
+            TestAllTypes.Builder allTypes = message.initRoot(TestAllTypes.factory);
+            int length = (1 << 27) + 1;
+            PrimitiveList.Short.Builder list = allTypes.initUInt16List(length);
+            assertThat(list.size(), is(length));
+            list.set(length - 1, (short) 3);
+            assertThat(list.get(length - 1), is((short) 3));
+            assertThat(allTypes.asReader().getUInt16List().get(length - 1), is((short) 3));
         }
     }
 
+    @Test
     public void testLongUint32List() {
         {
             MessageBuilder message = new MessageBuilder();
-            allTypes = message.initRoot(TestAllTypes.factory)
-            length = (1 << 26) + 1
-            list = allTypes.initUInt32List(length)
-            assertThat(list.size(), is(length
-            )
-            list.set(length - 1, 3)
-            assertThat(list.get(length - 1), is(3)
-            assertThat(allTypes.asReader().getUInt32List().get(length - 1), is(3)
+            TestAllTypes.Builder allTypes = message.initRoot(TestAllTypes.factory);
+            int length = (1 << 26) + 1;
+            PrimitiveList.Int.Builder list = allTypes.initUInt32List(length);
+            assertThat(list.size(), is(length));
+            list.set(length - 1, 3);
+            assertThat(list.get(length - 1), is(3));
+            assertThat(allTypes.asReader().getUInt32List().get(length - 1), is(3));
         }
     }
 
+    @Test
     public void testLongUint64List() {
         {
             MessageBuilder message = new MessageBuilder();
-            allTypes = message.initRoot(TestAllTypes.factory)
-            length = (1 << 25) + 1
-            list = allTypes.initUInt64List(length)
-            assertThat(list.size(), is(length
-            )
-            list.set(length - 1, 3)
-            assertThat(list.get(length - 1), is(3)
-            assertThat(allTypes.asReader().getUInt64List().get(length - 1), is(3)
+            TestAllTypes.Builder allTypes = message.initRoot(TestAllTypes.factory);
+            int length = (1 << 25) + 1;
+            PrimitiveList.Long.Builder list = allTypes.initUInt64List(length);
+            assertThat(list.size(), is(length));
+            list.set(length - 1, 3L);
+            assertThat(list.get(length - 1), is(3L));
+            assertThat(allTypes.asReader().getUInt64List().get(length - 1), is(3L));
         }
     }
 
+    @Test
     public void testLongFloat32List() {
         {
             MessageBuilder message = new MessageBuilder();
-            allTypes = message.initRoot(TestAllTypes.factory)
-            length = (1 << 26) + 1
-            list = allTypes.initFloat32List(length)
-            assertThat(list.size(), is(length
-            )
-            list.set(length - 1, 3.14f)
-            assertThat(list.get(length - 1), is(3.14f)
-            assertThat(allTypes.asReader().getFloat32List().get(length - 1), is(3.14f)
+            TestAllTypes.Builder allTypes = message.initRoot(TestAllTypes.factory);
+            int length = (1 << 26) + 1;
+            PrimitiveList.Float.Builder list = allTypes.initFloat32List(length);
+            assertThat(list.size(), is(length));
+            list.set(length - 1, 3.14f);
+            assertThat(list.get(length - 1), is(3.14f));
+            assertThat(allTypes.asReader().getFloat32List().get(length - 1), is(3.14f));
         }
     }
 
+    @Test
     public void testLongFloat64List() {
         {
             MessageBuilder message = new MessageBuilder();
-            allTypes = message.initRoot(TestAllTypes.factory)
-            length = (1 << 25) + 1
-            list = allTypes.initFloat64List(length)
-            assertThat(list.size(), is(length
-            )
-            list.set(length - 1, 3.14)
-            assertThat(list.get(length - 1), is(3.14)
-            assertThat(allTypes.asReader().getFloat64List().get(length - 1), is(3.14)
+            TestAllTypes.Builder allTypes = message.initRoot(TestAllTypes.factory);
+            int length = (1 << 25) + 1;
+            PrimitiveList.Double.Builder list = allTypes.initFloat64List(length);
+            assertThat(list.size(), is(length));
+            list.set(length - 1, 3.14);
+            assertThat(list.get(length - 1), is(3.14));
+            assertThat(allTypes.asReader().getFloat64List().get(length - 1), is(3.14));
         }
     }
 
+    @Test
     public void testLongStructList() {
         {
             MessageBuilder message = new MessageBuilder();
-            allTypes = message.initRoot(TestAllTypes.factory)
-            length = (1 << 21) + 1
-            list = allTypes.initStructList(length)
-            assertThat(list.size(), is(length
-            )
-            list.get(length - 1).setUInt8Field(3)
-            assertThat(allTypes.asReader().getStructList().get(length - 1).getUInt8Field(), is(3)
+            TestAllTypes.Builder allTypes = message.initRoot(TestAllTypes.factory);
+            int length = (1 << 21) + 1;
+            StructList.Builder<TestAllTypes.Builder> list = allTypes.initStructList(length);
+            assertThat(list.size(), is(length));
+            list.get(length - 1).setUInt8Field((byte) 3);
+            assertThat(allTypes.asReader().getStructList().get(length - 1).getUInt8Field(), is((byte) 3));
         }
     }
 
+    @Test
     public void testLongTextList() {
         {
             MessageBuilder message = new MessageBuilder();
-            allTypes = message.initRoot(TestAllTypes.factory)
-            length = (1 << 25) + 1
-            list = allTypes.initTextList(length)
-            assertThat(list.size(), is(length
-            )
-            list.set(length - 1, new Text.Reader("foo"))
-            assertThat(allTypes.asReader().getTextList().get(length - 1).toString(), is("foo")
+            TestAllTypes.Builder allTypes = message.initRoot(TestAllTypes.factory);
+            int length = (1 << 25) + 1;
+            TextList.Builder list = allTypes.initTextList(length);
+            assertThat(list.size(), is(length));
+            list.set(length - 1, new Text.Reader("foo"));
+            assertThat(allTypes.asReader().getTextList().get(length - 1).toString(), is("foo"));
         }
     }
 
+    @Test
     public void testLongListList() {
         {
             MessageBuilder message = new MessageBuilder();
-            root = message.initRoot(TestLists.factory)
-            length = (1 << 25) + 1
-            list = root.initStructListList(length)
-            assertThat(list.size(), is(length
-            )
-            list.init(length - 1, 3)
-            assertThat(list.get(length - 1).size(), is(3)
-            assertThat(root.asReader().getStructListList().get(length - 1).size(), is(3)
+            TestLists.Builder root = message.initRoot(TestLists.factory);
+            int length = (1 << 25) + 1;
+            ListList.Builder<StructList.Builder<TestAllTypes.Builder>> list = root.initStructListList(length);
+            assertThat(list.size(), is(length));
+            list.init(length - 1, 3);
+            assertThat(list.get(length - 1).size(), is(3));
+            assertThat(root.asReader().getStructListList().get(length - 1).size(), is(3));
         }
     }
 
+    @Test
     public void testStructSetters() {
-        builder = new MessageBuilder();
-        root = builder.initRoot(TestAllTypes.factory)
-        TestUtilJava.initTestMessage(root)
+        MessageBuilder builder = new MessageBuilder();
+        TestAllTypes.Builder root = builder.initRoot(TestAllTypes.factory);
+        TestUtilJava.initTestMessage(root);
 
         {
-            builder2 = new MessageBuilder();
-            builder2.setRoot(TestAllTypes.factory, root.asReader())
-            TestUtilJava.checkTestMessage(builder2.getRoot(TestAllTypes.factory))
+            MessageBuilder builder2 = new MessageBuilder();
+            builder2.setRoot(TestAllTypes.factory, root.asReader());
+            TestUtilJava.checkTestMessage(builder2.getRoot(TestAllTypes.factory));
         }
 
         {
-            builder2 = new MessageBuilder();
-            root2 = builder2.getRoot(TestAllTypes.factory)
-            root2.setStructField(root.asReader())
-            TestUtilJava.checkTestMessage(root2.getStructField())
+            MessageBuilder builder2 = new MessageBuilder();
+            TestAllTypes.Builder root2 = builder2.getRoot(TestAllTypes.factory);
+            root2.setStructField(root.asReader());
+            TestUtilJava.checkTestMessage(root2.getStructField());
         }
 
         {
-            builder2 = new MessageBuilder();
-            root2 = builder2.getRoot(TestAnyPointer.factory)
-            root2.getAnyPointerField().setAs(TestAllTypes.factory, root.asReader())
-            TestUtilJava.checkTestMessage(root2.getAnyPointerField.getAs(TestAllTypes.factory))
+            MessageBuilder builder2 = new MessageBuilder();
+            TestAnyPointer.Builder root2 = builder2.getRoot(TestAnyPointer.factory);
+            root2.getAnyPointerField().setAs(TestAllTypes.factory, root.asReader());
+            TestUtilJava.checkTestMessage(root2.getAnyPointerField().getAs(TestAllTypes.factory));
         }
     }
 
-    public void testSerializedSize() {
-        builder = new MessageBuilder();
-        root = builder.initRoot(TestAnyPointer.factory)
-        root.getAnyPointerField().setAs(Text.factory, new Text.Reader("12345")) // one word for segment table, one for the root pointer,
-                // one for the body of the TestAnyPointer struct,
-                // and one for the body of the Text.
-        assertThat(Serialize.computeSerializedSizeInWords(builder), is(4)
-    }
-
+    @Test
     public void testImport() {
-        builder = new MessageBuilder();
-        root = builder.initRoot(org.capnproto.test.TestImport.Foo.factory)
-        field = root.initImportedStruct()
-        TestUtilJava.initTestMessage(field)
-        TestUtilJava.checkTestMessage(field)
-        TestUtilJava.checkTestMessage(field.asReader())
+        MessageBuilder builder = new MessageBuilder();
+        TestImport.Foo.Builder root = builder.initRoot(org.capnproto.test.TestImport.Foo.factory);
+        TestAllTypes.Builder field = root.initImportedStruct();
+        TestUtilJava.initTestMessage(field);
+        TestUtilJava.checkTestMessage(field);
+        TestUtilJava.checkTestMessage(field.asReader());
     }
 
+    @Test
     public void testGenericMap() {
-        builder = new MessageBuilder();
-        mapFactory = new GenericMap.Factory(Text.factory, TestAllTypes.factory)
-        entryFactory = new StructList.Factory(new GenericMap.Entry.Factory(Text.factory, TestAllTypes.factory));
-        root = builder.initRoot(mapFactory)
+        MessageBuilder builder = new MessageBuilder();
+        GenericMap.Factory<Text.Builder, Text.Reader, TestAllTypes.Builder, TestAllTypes.Reader> mapFactory = new GenericMap.Factory<>(Text.factory, TestAllTypes.factory);
+        StructList.Factory<GenericMap.Entry.Builder<Text.Builder, TestAllTypes.Builder>, GenericMap.Entry.Reader<Text.Reader, TestAllTypes.Reader>> entryFactory = new StructList.Factory<>(new GenericMap.Entry.Factory<>(Text.factory, TestAllTypes.factory));
+        GenericMap.Builder<Text.Builder, TestAllTypes.Builder> root = builder.initRoot(mapFactory);
 
         {
-            entries = root.initEntries(entryFactory, 3);
+            StructList.Builder<GenericMap.Entry.Builder<Text.Builder, TestAllTypes.Builder>> entries = root.initEntries(entryFactory, 3);
 
-            entry0 = entries.get(0)
-            entry0.setKey(Text.factory, new Text.Reader("foo"))
-            ue0 = entry0.initValue()
+            GenericMap.Entry.Builder<Text.Builder, TestAllTypes.Builder> entry0 = entries.get(0);
+            entry0.setKey(Text.factory, new Text.Reader("foo"));
+            TestAllTypes.Builder ue0 = entry0.initValue();
             ue0.setInt64Field(101);
 
-            entry1 = entries.get(1)
-            entry1.setKey(Text.factory, new Text.Reader("bar"))
-            ue1 = entry1.initValue()
+            GenericMap.Entry.Builder<Text.Builder, TestAllTypes.Builder> entry1 = entries.get(1);
+            entry1.setKey(Text.factory, new Text.Reader("bar"));
+            TestAllTypes.Builder ue1 = entry1.initValue();
             ue1.setInt64Field(202);
 
-            entry2 = entries.get(2)
-            entry2.setKey(Text.factory, new Text.Reader("baz"))
-            ue2 = entry2.initValue()
+            GenericMap.Entry.Builder<Text.Builder, TestAllTypes.Builder> entry2 = entries.get(2);
+            entry2.setKey(Text.factory, new Text.Reader("baz"));
+            TestAllTypes.Builder ue2 = entry2.initValue();
             ue2.setInt64Field(303);
         }
 
         {
-            entries = root.asReader(mapFactory).getEntries(entryFactory)
-            entry0 = entries.get(0)
-            assertThat((entry0.getKey().toString() ), is( "foo"));
-            assertThat((entry0.getValue().getInt64Field() ), is( 101));
+            StructList.Reader<GenericMap.Entry.Reader<Text.Reader, TestAllTypes.Reader>> entries = root.asReader(mapFactory).getEntries(entryFactory);
+            GenericMap.Entry.Reader<Text.Reader, TestAllTypes.Reader> entry0 = entries.get(0);
+            assertThat((entry0.getKey().toString()), is("foo"));
+            assertThat((entry0.getValue().getInt64Field()), is(101L));
 
-            entry1 = entries.get(1)
-            assertThat((entry1.getKey().toString() ), is( "bar"));
-            assertThat((entry1.getValue().getInt64Field() ), is( 202));
+            GenericMap.Entry.Reader<Text.Reader, TestAllTypes.Reader> entry1 = entries.get(1);
+            assertThat((entry1.getKey().toString()), is("bar"));
+            assertThat((entry1.getValue().getInt64Field()), is(202L));
 
-            entry2 = entries.get(2)
-            assertThat((entry2.getKey().toString() ), is( "baz"));
-            assertThat((entry2.getValue().getInt64Field ), is( 303));
+            GenericMap.Entry.Reader<Text.Reader, TestAllTypes.Reader> entry2 = entries.get(2);
+            assertThat((entry2.getKey().toString()), is("baz"));
+            assertThat((entry2.getValue().getInt64Field()), is(303L));
         }
     }
 
+    @Test
     public void testsetWithCaveats() {
-        builder = new MessageBuilder();
-        root = builder.initRoot(TestAllTypes.factory)
-        list = root.initStructList(2)
+        MessageBuilder builder = new MessageBuilder();
+        TestAllTypes.Builder root = builder.initRoot(TestAllTypes.factory);
+        StructList.Builder<TestAllTypes.Builder> list = root.initStructList(2);
 
         {
             MessageBuilder message1 = new MessageBuilder();
-            root1 = message1.initRoot(TestAllTypes.factory)
-            root1.setInt8Field(11)
-            list.setWithCaveats(TestAllTypes.factory, 0, root1.asReader())
+            TestAllTypes.Builder root1 = message1.initRoot(TestAllTypes.factory);
+            root1.setInt8Field((byte) 11);
+            list.setWithCaveats(TestAllTypes.factory, 0, root1.asReader());
         }
 
         {
             MessageBuilder message2 = new MessageBuilder();
-            root2 = message2.initRoot(TestAllTypes.factory)
-            TestUtilJava.initTestMessage(root2)
-            list.setWithCaveats(TestAllTypes.factory, 1, root2.asReader())
+            TestAllTypes.Builder root2 = message2.initRoot(TestAllTypes.factory);
+            TestUtilJava.initTestMessage(root2);
+            list.setWithCaveats(TestAllTypes.factory, 1, root2.asReader());
         }
 
-        listReader = list.asReader(TestAllTypes.factory)
-        assertThat(listReader.get(0).getInt8Field(), is(11)
-        TestUtilJava.checkTestMessage(listReader.get(1))
+        StructList.Reader<TestAllTypes.Reader> listReader = list.asReader(TestAllTypes.factory);
+        assertThat(listReader.get(0).getInt8Field(), is((byte) 11));
+        TestUtilJava.checkTestMessage(listReader.get(1));
     }
-     */
 }

@@ -188,11 +188,11 @@ public final class Text {
 
         void copy(Reader srcReader) {
             DataView src = srcReader.getBuffer();
-            src.write(srcReader.getOffset(), srcReader.getSize(), buffer, offset);
+            src.writeTo(buffer, offset, srcReader.getOffset(), srcReader.getSize());
         }
 
         void writeData(int offset, int size, DataView dataView) {
-            dataView.write(this.offset, Math.min(size, this.size), buffer, offset);
+            dataView.writeTo(buffer, offset, this.offset, Math.min(size, this.size));
         }
 
         void put(int i, byte get) {

@@ -1123,7 +1123,7 @@ final class WireHelpers {
     }
 
     static void memcpy(DataView dstBuffer, int dstByteOffset, DataView srcBuffer, int srcByteOffset, int srcLength) {
-        srcBuffer.write(srcByteOffset, srcLength, dstBuffer, dstByteOffset);
+        srcBuffer.writeTo(dstBuffer, dstByteOffset, srcByteOffset, srcLength);
     }
 
     static GenericSegmentBuilder copyPointer(GenericSegmentBuilder dstSegment, int dstOffset,
