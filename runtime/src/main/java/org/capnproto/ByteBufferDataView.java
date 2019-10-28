@@ -147,13 +147,17 @@ public class ByteBufferDataView implements DataView {
             buffer.limit(srcOffset + length);
 
             ByteBuffer tmpDst = getDstByteBuffer(dst);
-            // we extend the limit here. Deal with it.
-            if (tmpDst.limit() <= dstOffset) {
-                tmpDst.limit(dstOffset + length);
-            }
+            // the dst limit is used to define the copy length
+            int limit = tmpDst.limit();
+            tmpDst.limit(dstOffset + length);
+
             tmpDst.position(dstOffset);
             tmpDst.put(buffer);
             buffer.limit(srcLimit);
+            // we reset the limit if possible
+            if (limit > dstOffset + length) {
+                tmpDst.limit(limit);
+            }
         } else {
             for (int i = 0; i < length; i++) {
                 dst.put(i + dstOffset, buffer.get(i + srcOffset));
