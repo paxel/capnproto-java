@@ -578,7 +578,7 @@ public class PrimitiveList {
         }
         public static final Factory factory = new Factory();
 
-        public static final class Reader extends ListReader implements Collection<java.lang.Byte>, Recycable<Reader> {
+        public static final class Reader extends ListReader implements Collection<java.lang.Byte>, Recyclable<Reader> {
 
             private Recycler<Reader> recycler;
             private boolean recycled;
@@ -880,7 +880,7 @@ public class PrimitiveList {
         }
         public static final Factory factory = new Factory();
 
-        public static final class Reader extends ListReader implements Collection<java.lang.Short>, Recycable<Reader> {
+        public static final class Reader extends ListReader implements Collection<java.lang.Short>, Recyclable<Reader> {
 
             private Recycler<Reader> recycler;
             private boolean recycled;
@@ -1183,7 +1183,7 @@ public class PrimitiveList {
         }
         public static final Factory factory = new Factory();
 
-        public static final class Reader extends ListReader implements Collection<Integer>, Recycable<Reader> {
+        public static final class Reader extends ListReader implements Collection<Integer>, Recyclable<Reader> {
 
             private boolean recycled;
             private Recycler<Reader> recycler;
@@ -1749,7 +1749,7 @@ public class PrimitiveList {
         }
         public static final Factory factory = new Factory();
 
-        public static final class Reader extends ListReader implements Collection<java.lang.Long>, Recycable<Reader> {
+        public static final class Reader extends ListReader implements Collection<java.lang.Long>, Recyclable<Reader> {
 
             private boolean recycled;
             private Recycler<Reader> recycler;

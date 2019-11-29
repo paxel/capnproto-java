@@ -67,7 +67,7 @@ public class EnumList {
         }
     }
 
-    public static final class Reader<T extends java.lang.Enum> extends ListReader implements Collection<T>, Recycable<Reader<T>> {
+    public static final class Reader<T extends java.lang.Enum> extends ListReader implements Collection<T>, Recyclable<Reader<T>> {
 
         public T values[];
         private Recycler<Reader<T>> recycler;

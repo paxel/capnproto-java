@@ -9,7 +9,7 @@ import java.util.function.Supplier;
  *
  * @param <T> The type of the recycled objects.
  */
-public class Recycler<T extends Recycable<T>> {
+public class Recycler<T extends Recyclable<T>> {
 
     private final Queue<T> recycler = new ArrayDeque<>();
 

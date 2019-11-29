@@ -93,7 +93,7 @@ public final class StructList {
         }
     }
 
-    public static final class Reader<T> extends ListReader implements Collection<T>, Recycable<Reader<T>> {
+    public static final class Reader<T> extends ListReader implements Collection<T>, Recyclable<Reader<T>> {
 
         public StructReader.Factory<T> factory;
         private Recycler<Reader<T>> recycler;

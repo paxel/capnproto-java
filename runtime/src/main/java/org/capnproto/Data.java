@@ -80,7 +80,7 @@ public final class Data {
     }
     public static final Factory factory = new Factory();
 
-    public static final class Reader implements Recycable<Reader> {
+    public static final class Reader implements Recyclable<Reader> {
 
         private boolean recycled;
         private Recycler<Reader> recycler;

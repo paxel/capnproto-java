@@ -6,7 +6,7 @@ package org.capnproto;
  *
  * @param <R> The type of this Recycable.
  */
-public interface Recycable<R extends Recycable<R>> {
+public interface Recyclable<R extends Recyclable<R>> {
 
     /**
      * Inits this object with its Recycler. This happens automatically if the object is created by a {@link Recycler}.

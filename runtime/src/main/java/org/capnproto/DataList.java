@@ -62,7 +62,7 @@ public final class DataList {
     }
     public static final Factory factory = new Factory();
 
-    public static final class Reader extends ListReader implements Collection<Data.Reader>, Recycable<Reader> {
+    public static final class Reader extends ListReader implements Collection<Data.Reader>, Recyclable<Reader> {
 
         private boolean recycled;
         private Recycler<Reader> recycler;

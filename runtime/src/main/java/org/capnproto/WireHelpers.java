@@ -51,14 +51,17 @@ final class WireHelpers {
         return (int) ((bits + 63) / ((long) Constants.BITS_PER_WORD));
     }
 
-    static class AllocateResult implements Recycable<AllocateResult> {
+    static class AllocateResult implements Recyclable<AllocateResult> {
+
+        public AllocateResult() {
+        }
 
         public int ptr;
         public int refOffset;
         public GenericSegmentBuilder segment;
 
         private Recycler<AllocateResult> recycler;
-        private boolean recycled;
+        private boolean recycled = true;
 
         @Override
         public void init(Recycler<AllocateResult> recycler) {
@@ -78,6 +81,9 @@ final class WireHelpers {
         }
 
         void init(int ptr, int refOffset, GenericSegmentBuilder segment) {
+            if (!recycled) {
+                throw new IllegalStateException("Not recycled yet");
+            }
             recycled = false;
             this.ptr = ptr;
             this.refOffset = refOffset;
@@ -190,7 +196,7 @@ final class WireHelpers {
         }
     }
 
-    static class FollowFarsResult implements Recycable<FollowFarsResult> {
+    static class FollowFarsResult implements Recyclable<FollowFarsResult> {
 
         public int ptr;
         public long ref;
@@ -483,7 +489,7 @@ final class WireHelpers {
         final int allocRefOffset = ownedAllocationResult.refOffset;
         final int allocPtr = ownedAllocationResult.ptr;
         ownedAllocationResult.recycle();
-        // invalid after this call
+        // ownedAllocationResult is invalid after the call to recycle()
         ownedAllocationResult = null;
 
         StructPointer.setFromStructSize(allocSegment.getBuffer(), allocRefOffset, size);
@@ -531,7 +537,7 @@ final class WireHelpers {
             final int allocRefOffset = ownedAllocationResult.refOffset;
             final int allocPtr = ownedAllocationResult.ptr;
             ownedAllocationResult.recycle();
-            // invalid after this call
+            // ownedAllocationResult is invalid after the call to recycle()
             ownedAllocationResult = null;
 
             StructPointer.set(allocSegment.getBuffer(), allocRefOffset, newDataSize, newPointerCount);
@@ -578,12 +584,16 @@ final class WireHelpers {
         int pointerCount = ElementSize.pointersPerElement(elementSize);
         int step = dataSize + pointerCount * Constants.BITS_PER_POINTER;
         int wordCount = roundBitsUpToWords((long) elementCount * (long) step);
-        AllocateResult allocation = allocate(refOffset, segment, wordCount, WirePointer.LIST);
+        AllocateResult ownedAllocationResult = allocate(refOffset, segment, wordCount, WirePointer.LIST);
+        final GenericSegmentBuilder allocatedSegment = ownedAllocationResult.segment;
 
-        ListPointer.set(allocation.segment.getBuffer(), allocation.refOffset, elementSize, elementCount);
-
-        return factory.constructBuilder(allocation.segment,
-                allocation.ptr * Constants.BYTES_PER_WORD,
+        ListPointer.set(allocatedSegment.getBuffer(), ownedAllocationResult.refOffset, elementSize, elementCount);
+        final int allocatedPointer = ownedAllocationResult.ptr;
+        ownedAllocationResult.recycle();
+        // ownedAllocationResult is invalid after the call to recycle()
+        ownedAllocationResult = null;
+        return factory.constructBuilder(allocatedSegment,
+                allocatedPointer * Constants.BYTES_PER_WORD,
                 elementCount, step, dataSize, (short) pointerCount);
     }
 
@@ -601,7 +611,7 @@ final class WireHelpers {
         final int allocPtr = ownedAllocationResult.ptr;
         final int allocRefOffset = ownedAllocationResult.refOffset;
         ownedAllocationResult.recycle();
-        // invalid after this call
+        // ownedAllocationResult is invalid after the call to recycle()
         ownedAllocationResult = null;
 
         //# Initialize the pointer.
@@ -724,25 +734,29 @@ final class WireHelpers {
             //# Don't let allocate() zero out the object just yet.
             zeroPointerAndFars(origSegment, origRefOffset);
 
-            AllocateResult allocation = allocate(origRefOffset, origSegment,
+            AllocateResult ownedAllocationResult = allocate(origRefOffset, origSegment,
                     totalSize + Constants.POINTER_SIZE_IN_WORDS,
                     WirePointer.LIST);
+            final GenericSegmentBuilder allocatedSegment = ownedAllocationResult.segment;
 
-            ListPointer.setInlineComposite(allocation.segment.getBuffer(), allocation.refOffset, totalSize);
+            ListPointer.setInlineComposite(allocatedSegment.getBuffer(), ownedAllocationResult.refOffset, totalSize);
+            final int allocationPtr = ownedAllocationResult.ptr;
+            ownedAllocationResult.recycle();
+            // ownedAllocationResult is invalid after the call to recycle()
+            ownedAllocationResult = null;
 
-            long tag = allocation.segment.get(allocation.ptr);
-            WirePointer.setKindAndInlineCompositeListElementCount(
-                    allocation.segment.getBuffer(), allocation.ptr,
+            long tag = allocatedSegment.get(allocationPtr);
+            WirePointer.setKindAndInlineCompositeListElementCount(allocatedSegment.getBuffer(), allocationPtr,
                     WirePointer.STRUCT, elementCount);
-            StructPointer.set(allocation.segment.getBuffer(), allocation.ptr,
+            StructPointer.set(allocatedSegment.getBuffer(), allocationPtr,
                     newDataSize, newPointerCount);
-            int newPtr = allocation.ptr + Constants.POINTER_SIZE_IN_WORDS;
+            int newPtr = allocationPtr + Constants.POINTER_SIZE_IN_WORDS;
 
             int src = oldPtr;
             int dst = newPtr;
             for (int ii = 0; ii < elementCount; ++ii) {
                 //# Copy data section.
-                memcpy(allocation.segment.getBuffer(), dst * Constants.BYTES_PER_WORD,
+                memcpy(allocatedSegment.getBuffer(), dst * Constants.BYTES_PER_WORD,
                         resolved.segment.getBuffer(), src * Constants.BYTES_PER_WORD,
                         oldDataSize * Constants.BYTES_PER_WORD);
 
@@ -750,7 +764,7 @@ final class WireHelpers {
                 int newPointerSection = dst + newDataSize;
                 int oldPointerSection = src + oldDataSize;
                 for (int jj = 0; jj < oldPointerCount; ++jj) {
-                    transferPointer(allocation.segment, newPointerSection + jj,
+                    transferPointer(allocatedSegment, newPointerSection + jj,
                             resolved.segment, oldPointerSection + jj);
                 }
 
@@ -762,7 +776,7 @@ final class WireHelpers {
             //# Make sure to include the tag word.
             memClear(resolved.segment.getBuffer(), resolved.ptr * Constants.BYTES_PER_WORD, (1 + oldStep * elementCount) * Constants.BYTES_PER_WORD);
 
-            return factory.constructBuilder(allocation.segment, newPtr * Constants.BYTES_PER_WORD,
+            return factory.constructBuilder(allocatedSegment, newPtr * Constants.BYTES_PER_WORD,
                     elementCount,
                     newStep * Constants.BITS_PER_WORD,
                     newDataSize * Constants.BITS_PER_WORD,
@@ -803,19 +817,24 @@ final class WireHelpers {
                 //# Don't let allocate() zero out the object just yet.
                 zeroPointerAndFars(origSegment, origRefOffset);
 
-                AllocateResult allocation = allocate(origRefOffset, origSegment,
+                AllocateResult ownedAllocationResult = allocate(origRefOffset, origSegment,
                         totalWords + Constants.POINTER_SIZE_IN_WORDS,
                         WirePointer.LIST);
+                final GenericSegmentBuilder allocationSegment = ownedAllocationResult.segment;
+                final int allocationRefOffset = ownedAllocationResult.refOffset;
 
-                ListPointer.setInlineComposite(allocation.segment.getBuffer(), allocation.refOffset, totalWords);
+                ListPointer.setInlineComposite(allocationSegment.getBuffer(), allocationRefOffset, totalWords);
+                final int allocationPtr = ownedAllocationResult.ptr;
+                ownedAllocationResult.recycle();
+                // ownedAllocationResult is invalid after the call to recycle()
+                ownedAllocationResult = null;
 
-                long tag = allocation.segment.get(allocation.ptr);
-                WirePointer.setKindAndInlineCompositeListElementCount(
-                        allocation.segment.getBuffer(), allocation.ptr,
+                long tag = allocationSegment.get(allocationPtr);
+                WirePointer.setKindAndInlineCompositeListElementCount(allocationSegment.getBuffer(), allocationPtr,
                         WirePointer.STRUCT, elementCount);
-                StructPointer.set(allocation.segment.getBuffer(), allocation.ptr,
+                StructPointer.set(allocationSegment.getBuffer(), allocationPtr,
                         newDataSize, newPointerCount);
-                int newPtr = allocation.ptr + Constants.POINTER_SIZE_IN_WORDS;
+                int newPtr = allocationPtr + Constants.POINTER_SIZE_IN_WORDS;
 
                 if (oldSize == ElementSize.POINTER) {
                     int dst = newPtr + newDataSize;
@@ -830,7 +849,7 @@ final class WireHelpers {
                     int srcByteOffset = resolved.ptr * Constants.BYTES_PER_WORD;
                     int oldByteStep = oldDataSize / Constants.BITS_PER_BYTE;
                     for (int ii = 0; ii < elementCount; ++ii) {
-                        memcpy(allocation.segment.getBuffer(), dst * Constants.BYTES_PER_WORD,
+                        memcpy(allocationSegment.getBuffer(), dst * Constants.BYTES_PER_WORD,
                                 resolved.segment.getBuffer(), srcByteOffset, oldByteStep);
                         srcByteOffset += oldByteStep;
                         dst += newStep;
@@ -840,7 +859,7 @@ final class WireHelpers {
                 //# Zero out old location. See explanation in getWritableStructPointer().
                 memClear(resolved.segment.getBuffer(), resolved.ptr * Constants.BYTES_PER_WORD, roundBitsUpToBytes(oldStep * elementCount));
 
-                return factory.constructBuilder(allocation.segment, newPtr * Constants.BYTES_PER_WORD,
+                return factory.constructBuilder(allocationSegment, newPtr * Constants.BYTES_PER_WORD,
                         elementCount,
                         newStep * Constants.BITS_PER_WORD,
                         newDataSize * Constants.BITS_PER_WORD,
@@ -857,13 +876,18 @@ final class WireHelpers {
         int byteSize = size + 1;
 
         //# Allocate the space.
-        AllocateResult allocation = allocate(refOffset, segment, roundBytesUpToWords(byteSize),
+        AllocateResult ownedAllocationResult = allocate(refOffset, segment, roundBytesUpToWords(byteSize),
                 WirePointer.LIST);
+        final GenericSegmentBuilder allocatedSegment = ownedAllocationResult.segment;
 
         //# Initialize the pointer.
-        ListPointer.set(allocation.segment.getBuffer(), allocation.refOffset, ElementSize.BYTE, byteSize);
+        ListPointer.set(allocatedSegment.getBuffer(), ownedAllocationResult.refOffset, ElementSize.BYTE, byteSize);
+        final int ptr = ownedAllocationResult.ptr;
+        ownedAllocationResult.recycle();
+        // ownedAllocationResult is invalid after the call to recycle()
+        ownedAllocationResult = null;
 
-        return new Text.Builder(allocation.segment.getBuffer(), allocation.ptr * Constants.BYTES_PER_WORD, size);
+        return new Text.Builder(allocatedSegment.getBuffer(), ptr * Constants.BYTES_PER_WORD, size);
     }
 
     static Text.Builder setTextPointer(int refOffset,
@@ -919,13 +943,19 @@ final class WireHelpers {
     // size is in bytes
     static Data.Builder initDataPointer(int refOffset, GenericSegmentBuilder segment, int size) {
         //# Allocate the space.
-        AllocateResult allocation = allocate(refOffset, segment, roundBytesUpToWords(size),
+        AllocateResult ownedAllocationResult = allocate(refOffset, segment, roundBytesUpToWords(size),
                 WirePointer.LIST);
+        final GenericSegmentBuilder allocationSegment = ownedAllocationResult.segment;
+        final int allocationRefOffset = ownedAllocationResult.refOffset;
 
         //# Initialize the pointer.
-        ListPointer.set(allocation.segment.getBuffer(), allocation.refOffset, ElementSize.BYTE, size);
+        ListPointer.set(allocationSegment.getBuffer(), allocationRefOffset, ElementSize.BYTE, size);
+        final int allocationPtr = ownedAllocationResult.ptr;
+        ownedAllocationResult.recycle();
+        // ownedAllocationResult is invalid after the call to recycle()
+        ownedAllocationResult = null;
 
-        return new Data.Builder(allocation.segment.getBuffer(), allocation.ptr * Constants.BYTES_PER_WORD, size);
+        return new Data.Builder(allocationSegment.getBuffer(), allocationPtr * Constants.BYTES_PER_WORD, size);
     }
 
     static Data.Builder setDataPointer(int refOffset, GenericSegmentBuilder segment, Data.Reader src) {
@@ -1021,23 +1051,27 @@ final class WireHelpers {
         short dataSize = (short) roundBitsUpToWords(value.dataSize);
         int totalSize = dataSize + value.pointerCount * Constants.POINTER_SIZE_IN_WORDS;
 
-        AllocateResult allocation = allocate(refOffset, segment, totalSize, WirePointer.STRUCT);
-        StructPointer.set(allocation.segment.getBuffer(), allocation.refOffset,
-                dataSize, value.pointerCount);
+        AllocateResult ownedAllocationResult = allocate(refOffset, segment, totalSize, WirePointer.STRUCT);
+        final GenericSegmentBuilder allocationSegment = ownedAllocationResult.segment;
+        final int allocationRefOffset = ownedAllocationResult.refOffset;
+        StructPointer.set(allocationSegment.getBuffer(), allocationRefOffset, dataSize, value.pointerCount);
+        final int ptr = ownedAllocationResult.ptr;
+        ownedAllocationResult.recycle();
+        // ownedAllocationResult is invalid after the call to recycle()
+        ownedAllocationResult = null;
 
         if (value.dataSize == 1) {
             throw new CapnProtoException("single bit case not handled");
         } else {
-            memcpy(allocation.segment.getBuffer(), allocation.ptr * Constants.BYTES_PER_WORD,
+            memcpy(allocationSegment.getBuffer(), ptr * Constants.BYTES_PER_WORD,
                     value.segment.getBuffer(), value.data, value.dataSize / Constants.BITS_PER_BYTE);
         }
 
-        int pointerSection = allocation.ptr + dataSize;
+        int pointerSection = ptr + dataSize;
         for (int i = 0; i < value.pointerCount; ++i) {
-            copyPointer(allocation.segment, pointerSection + i, value.segment, value.pointers + i,
-                    value.nestingLimit);
+            copyPointer(allocationSegment, pointerSection + i, value.segment, value.pointers + i, value.nestingLimit);
         }
-        return allocation.segment;
+        return allocationSegment;
     }
 
     static GenericSegmentBuilder setListPointer(GenericSegmentBuilder segment, int refOffset, ListReader value) {
@@ -1045,14 +1079,19 @@ final class WireHelpers {
 
         if (value.step <= Constants.BITS_PER_WORD) {
             //# List of non-structs.
-            AllocateResult allocation = allocate(refOffset, segment, totalSize, WirePointer.LIST);
+            AllocateResult ownedAllocationResult = allocate(refOffset, segment, totalSize, WirePointer.LIST);
+            final GenericSegmentBuilder allocationSegment = ownedAllocationResult.segment;
+            final int allocationRefOffset = ownedAllocationResult.refOffset;
+            final int ptr = ownedAllocationResult.ptr;
+            ownedAllocationResult.recycle();
+            // ownedAllocationResult is invalid after the call to recycle()
+            ownedAllocationResult = null;
 
             if (value.structPointerCount == 1) {
                 //# List of pointers.
-                ListPointer.set(allocation.segment.getBuffer(), allocation.refOffset, ElementSize.POINTER, value.elementCount);
+                ListPointer.set(allocationSegment.getBuffer(), allocationRefOffset, ElementSize.POINTER, value.elementCount);
                 for (int i = 0; i < value.elementCount; ++i) {
-                    copyPointer(allocation.segment, allocation.ptr + i,
-                            value.segment, value.ptr / Constants.BYTES_PER_WORD + i, value.nestingLimit);
+                    copyPointer(allocationSegment, ptr + i, value.segment, value.ptr / Constants.BYTES_PER_WORD + i, value.nestingLimit);
                 }
             } else {
                 //# List of data.
@@ -1080,40 +1119,47 @@ final class WireHelpers {
                         throw new CapnProtoException("invalid list step size: " + value.step);
                 }
 
-                ListPointer.set(allocation.segment.getBuffer(), allocation.refOffset, elementSize, value.elementCount);
-                memcpy(allocation.segment.getBuffer(), allocation.ptr * Constants.BYTES_PER_WORD,
+                ListPointer.set(allocationSegment.getBuffer(), allocationRefOffset, elementSize, value.elementCount);
+                memcpy(allocationSegment.getBuffer(), ptr * Constants.BYTES_PER_WORD,
                         value.segment.getBuffer(), value.ptr, totalSize * Constants.BYTES_PER_WORD);
             }
-            return allocation.segment;
+            return allocationSegment;
         } else {
             //# List of structs.
-            AllocateResult allocation = allocate(refOffset, segment, totalSize + Constants.POINTER_SIZE_IN_WORDS, WirePointer.LIST);
-            ListPointer.setInlineComposite(allocation.segment.getBuffer(), allocation.refOffset, totalSize);
+            AllocateResult ownedAllocationResult = allocate(refOffset, segment, totalSize + Constants.POINTER_SIZE_IN_WORDS, WirePointer.LIST);
+            final GenericSegmentBuilder allocationSegment = ownedAllocationResult.segment;
+            final int ptr = ownedAllocationResult.ptr;
+            final int allocationRefOffset = ownedAllocationResult.refOffset;
+            ownedAllocationResult.recycle();
+            // ownedAllocationResult is invalid after the call to recycle()
+            ownedAllocationResult = null;
+
+            ListPointer.setInlineComposite(allocationSegment.getBuffer(), allocationRefOffset, totalSize);
             short dataSize = (short) roundBitsUpToWords(value.structDataSize);
             short pointerCount = value.structPointerCount;
 
-            WirePointer.setKindAndInlineCompositeListElementCount(allocation.segment.getBuffer(), allocation.ptr,
+            WirePointer.setKindAndInlineCompositeListElementCount(allocationSegment.getBuffer(), ptr,
                     WirePointer.STRUCT, value.elementCount);
-            StructPointer.set(allocation.segment.getBuffer(), allocation.ptr,
+            StructPointer.set(allocationSegment.getBuffer(), ptr,
                     dataSize, pointerCount);
 
-            int dstOffset = allocation.ptr + Constants.POINTER_SIZE_IN_WORDS;
+            int dstOffset = ptr + Constants.POINTER_SIZE_IN_WORDS;
             int srcOffset = value.ptr / Constants.BYTES_PER_WORD;
 
             for (int i = 0; i < value.elementCount; ++i) {
-                memcpy(allocation.segment.getBuffer(), dstOffset * Constants.BYTES_PER_WORD,
+                memcpy(allocationSegment.getBuffer(), dstOffset * Constants.BYTES_PER_WORD,
                         value.segment.getBuffer(), srcOffset * Constants.BYTES_PER_WORD,
                         value.structDataSize / Constants.BITS_PER_BYTE);
                 dstOffset += dataSize;
                 srcOffset += dataSize;
 
                 for (int j = 0; j < pointerCount; ++j) {
-                    copyPointer(allocation.segment, dstOffset, value.segment, srcOffset, value.nestingLimit);
+                    copyPointer(allocationSegment, dstOffset, value.segment, srcOffset, value.nestingLimit);
                     dstOffset += Constants.POINTER_SIZE_IN_WORDS;
                     srcOffset += Constants.POINTER_SIZE_IN_WORDS;
                 }
             }
-            return allocation.segment;
+            return allocationSegment;
         }
     }
 
