@@ -51,7 +51,9 @@ public final class TextList {
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount) {
-            return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            Builder builder = new Builder();
+            builder.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            return builder;
         }
     }
     public static final Factory factory = new Factory();
@@ -165,10 +167,11 @@ public final class TextList {
 
     public static final class Builder extends ListBuilder implements Collection<String> {
 
-        public Builder(GenericSegmentBuilder segment, int ptr,
-                int elementCount, int step,
-                int structDataSize, short structPointerCount) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+        public Builder() {
+        }
+
+        protected void init(GenericSegmentBuilder segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount) {
+            super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
         }
 
         public final Text.Builder get(int index) {

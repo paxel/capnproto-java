@@ -31,7 +31,7 @@ public final class Data {
             FromPointerBuilderBlobDefault<Builder>,
             SetPointerBuilder<Builder, Reader> {
 
-        private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+        private final static ThreadLocal<org.capnproto.Recycler<Reader>> READER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
             @Override
             protected org.capnproto.Recycler<Reader> initialValue() {
                 return new org.capnproto.Recycler<>(Reader::new);
@@ -42,13 +42,13 @@ public final class Data {
         public final Reader fromPointerReaderBlobDefault(SegmentDataContainer segment, int pointer, DataView defaultBuffer,
                 int defaultOffset, int defaultSize) {
             return WireHelpers.readDataPointer(segment,
-                    pointer, RECYCLER.get(),
+                    pointer, READER_RECYCLER.get(),
                     r -> r.init(defaultBuffer, defaultOffset, defaultSize));
         }
 
         @Override
         public final Reader fromPointerReader(SegmentDataContainer segment, int pointer, int nestingLimit) {
-            return WireHelpers.readDataPointer(segment, pointer, RECYCLER.get(), Reader::init);
+            return WireHelpers.readDataPointer(segment, pointer, READER_RECYCLER.get(), Reader::init);
         }
 
         @Override

@@ -869,15 +869,12 @@ final class WireHelpers {
     }
 
     // size is in bytes
-    static Text.Builder initTextPointer(int refOffset,
-            GenericSegmentBuilder segment,
-            int size) {
+    static Text.Builder initTextPointer(int refOffset, GenericSegmentBuilder segment, int size) {
         //# The byte list must include a NUL terminator.
         int byteSize = size + 1;
 
         //# Allocate the space.
-        AllocateResult ownedAllocationResult = allocate(refOffset, segment, roundBytesUpToWords(byteSize),
-                WirePointer.LIST);
+        AllocateResult ownedAllocationResult = allocate(refOffset, segment, roundBytesUpToWords(byteSize), WirePointer.LIST);
         final GenericSegmentBuilder allocatedSegment = ownedAllocationResult.segment;
 
         //# Initialize the pointer.
@@ -890,9 +887,7 @@ final class WireHelpers {
         return new Text.Builder(allocatedSegment.getBuffer(), ptr * Constants.BYTES_PER_WORD, size);
     }
 
-    static Text.Builder setTextPointer(int refOffset,
-            GenericSegmentBuilder segment,
-            Text.Reader value) {
+    static Text.Builder setTextPointer(int refOffset, GenericSegmentBuilder segment, Text.Reader value) {
         Text.Builder builder = initTextPointer(refOffset, segment, value.getSize());
 
         builder.copy(value);

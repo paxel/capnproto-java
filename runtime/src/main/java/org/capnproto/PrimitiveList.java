@@ -36,10 +36,16 @@ public class PrimitiveList {
             Factory() {
                 super(ElementSize.VOID);
             }
-            private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+            private final static ThreadLocal<org.capnproto.Recycler<Reader>> READER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
                 @Override
                 protected org.capnproto.Recycler<Reader> initialValue() {
                     return new org.capnproto.Recycler<>(Reader::new);
+                }
+            };
+            private final static ThreadLocal<org.capnproto.Recycler<Builder>> BUILDER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Builder>>() {
+                @Override
+                protected org.capnproto.Recycler<Builder> initialValue() {
+                    return new org.capnproto.Recycler<>(Builder::new);
                 }
             };
 
@@ -49,7 +55,7 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                final Reader reader = RECYCLER.get().getOrCreate();
+                final Reader reader = READER_RECYCLER.get().getOrCreate();
                 reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 return reader;
             }
@@ -59,7 +65,9 @@ public class PrimitiveList {
                     int ptr,
                     int elementCount, int step,
                     int structDataSize, short structPointerCount) {
-                return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                Builder builder = BUILDER_RECYCLER.get().getOrCreate();
+                builder.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                return builder;
             }
 
         }
@@ -97,7 +105,7 @@ public class PrimitiveList {
 
             @Override
             protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
-                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 recycled = false;
             }
 
@@ -212,16 +220,14 @@ public class PrimitiveList {
 
         }
 
-        public static final class Builder extends ListBuilder implements Collection<org.capnproto.Void> {
+        public static final class Builder extends ListBuilder implements Collection<org.capnproto.Void>, Recyclable<Builder> {
 
-            public Builder(GenericSegmentBuilder segment, int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            public Builder() {
             }
 
             public final Reader asReader() {
-                final Reader reader = Void.Factory.RECYCLER.get().getOrCreate();
+                checkRecycled();
+                final Reader reader = Void.Factory.READER_RECYCLER.get().getOrCreate();
                 reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
@@ -229,26 +235,31 @@ public class PrimitiveList {
             }
 
             public org.capnproto.Void get(int index) {
+                checkRecycled();
                 return org.capnproto.Void.VOID;
             }
 
             @Override
             public boolean isEmpty() {
+                checkRecycled();
                 return elementCount == 0;
             }
 
             @Override
             public boolean contains(Object o) {
+                checkRecycled();
                 return stream().anyMatch(o::equals);
             }
 
             @Override
             public Object[] toArray() {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray();
             }
 
             @Override
             public <T> T[] toArray(T[] a) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray(a);
             }
 
@@ -264,6 +275,7 @@ public class PrimitiveList {
 
             @Override
             public boolean containsAll(Collection<?> c) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).containsAll(c);
             }
 
@@ -289,6 +301,7 @@ public class PrimitiveList {
 
             @Override
             public Stream<org.capnproto.Void> stream() {
+                checkRecycled();
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE), false);
             }
@@ -320,13 +333,47 @@ public class PrimitiveList {
 
             @Override
             public java.util.Iterator<org.capnproto.Void> iterator() {
+                checkRecycled();
                 return new Iterator(this);
             }
 
             @Override
             public String toString() {
+                checkRecycled();
                 return stream().map(String::valueOf).collect(Collectors.joining(", "));
             }
+
+            private Recycler<Builder> recycler;
+            private boolean recycled;
+
+            @Override
+            public void init(Recycler<Builder> recycler) {
+                this.recycler = recycler;
+            }
+
+            @Override
+            public void recycle() {
+                if (recycled) {
+                    throw new IllegalArgumentException("This reader is already recycled");
+                }
+                recycled = true;
+                if (recycler != null) {
+                    recycler.recycle(this);
+                }
+            }
+
+            private void checkRecycled() throws IllegalStateException {
+                if (recycled) {
+                    throw new IllegalStateException("Reader is recycled.");
+                }
+            }
+
+            @Override
+            protected void init(GenericSegmentBuilder segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                recycled = false;
+            }
+
         }
     }
 
@@ -337,10 +384,16 @@ public class PrimitiveList {
             Factory() {
                 super(ElementSize.BIT);
             }
-            private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+            private final static ThreadLocal<org.capnproto.Recycler<Reader>> READER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
                 @Override
                 protected org.capnproto.Recycler<Reader> initialValue() {
                     return new org.capnproto.Recycler<>(Reader::new);
+                }
+            };
+            private final static ThreadLocal<org.capnproto.Recycler<Builder>> BUILDER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Builder>>() {
+                @Override
+                protected org.capnproto.Recycler<Builder> initialValue() {
+                    return new org.capnproto.Recycler<>(Builder::new);
                 }
             };
 
@@ -350,7 +403,7 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                final Reader reader = RECYCLER.get().getOrCreate();
+                final Reader reader = READER_RECYCLER.get().getOrCreate();
                 reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 return reader;
             }
@@ -360,7 +413,9 @@ public class PrimitiveList {
                     int ptr,
                     int elementCount, int step,
                     int structDataSize, short structPointerCount) {
-                return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                Builder builder = BUILDER_RECYCLER.get().getOrCreate();
+                builder.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                return builder;
             }
         }
         public static final Factory factory = new Factory();
@@ -397,7 +452,7 @@ public class PrimitiveList {
 
             @Override
             protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
-                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 recycled = false;
             }
 
@@ -513,24 +568,26 @@ public class PrimitiveList {
 
         }
 
-        public static final class Builder extends ListBuilder implements Collection<java.lang.Boolean> {
+        public static final class Builder extends ListBuilder implements Collection<java.lang.Boolean>, Recyclable<Builder> {
 
-            public Builder(GenericSegmentBuilder segment, int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            
+            public Builder() {
             }
 
+
             public boolean get(int index) {
+                checkRecycled();
                 return _getBooleanElement(index);
             }
 
             public void set(int index, boolean value) {
+                checkRecycled();
                 _setBooleanElement(index, value);
             }
 
             public final Reader asReader() {
-                final Reader reader = Boolean.Factory.RECYCLER.get().getOrCreate();
+                checkRecycled();
+                final Reader reader = Boolean.Factory.READER_RECYCLER.get().getOrCreate();
                 reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
@@ -539,21 +596,25 @@ public class PrimitiveList {
 
             @Override
             public boolean isEmpty() {
+                checkRecycled();
                 return elementCount == 0;
             }
 
             @Override
             public boolean contains(Object o) {
+                checkRecycled();
                 return stream().anyMatch(o::equals);
             }
 
             @Override
             public Object[] toArray() {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray();
             }
 
             @Override
             public <T> T[] toArray(T[] a) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray(a);
             }
 
@@ -569,6 +630,7 @@ public class PrimitiveList {
 
             @Override
             public boolean containsAll(Collection<?> c) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).containsAll(c);
             }
 
@@ -593,6 +655,7 @@ public class PrimitiveList {
             }
 
             public Stream<java.lang.Boolean> stream() {
+                checkRecycled();
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE
                 ), false);
@@ -600,7 +663,39 @@ public class PrimitiveList {
 
             @Override
             public String toString() {
+                checkRecycled();
                 return stream().map(String::valueOf).collect(Collectors.joining(", "));
+            }
+
+            private Recycler<Builder> recycler;
+            private boolean recycled;
+
+            @Override
+            public void init(Recycler<Builder> recycler) {
+                this.recycler = recycler;
+            }
+
+            @Override
+            public void recycle() {
+                if (recycled) {
+                    throw new IllegalArgumentException("This reader is already recycled");
+                }
+                recycled = true;
+                if (recycler != null) {
+                    recycler.recycle(this);
+                }
+            }
+
+            private void checkRecycled() throws IllegalStateException {
+                if (recycled) {
+                    throw new IllegalStateException("Reader is recycled.");
+                }
+            }
+
+            @Override
+            protected void init(GenericSegmentBuilder segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                recycled = false;
             }
 
             public final class Iterator implements java.util.Iterator<java.lang.Boolean> {
@@ -643,10 +738,16 @@ public class PrimitiveList {
             Factory() {
                 super(ElementSize.BYTE);
             }
-            private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+            private final static ThreadLocal<org.capnproto.Recycler<Reader>> READER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
                 @Override
                 protected org.capnproto.Recycler<Reader> initialValue() {
                     return new org.capnproto.Recycler<>(Reader::new);
+                }
+            };
+            private final static ThreadLocal<org.capnproto.Recycler<Builder>> BUILDER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Builder>>() {
+                @Override
+                protected org.capnproto.Recycler<Builder> initialValue() {
+                    return new org.capnproto.Recycler<>(Builder::new);
                 }
             };
 
@@ -656,7 +757,7 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                final Reader reader = RECYCLER.get().getOrCreate();
+                final Reader reader = READER_RECYCLER.get().getOrCreate();
                 reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 return reader;
             }
@@ -666,7 +767,9 @@ public class PrimitiveList {
                     int ptr,
                     int elementCount, int step,
                     int structDataSize, short structPointerCount) {
-                return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                Builder builder = BUILDER_RECYCLER.get().getOrCreate();
+                builder.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                return builder;
             }
         }
         public static final Factory factory = new Factory();
@@ -809,30 +912,30 @@ public class PrimitiveList {
 
             @Override
             protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
-                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 recycled = false;
             }
 
         }
 
-        public static final class Builder extends ListBuilder implements Collection<java.lang.Byte> {
+        public static final class Builder extends ListBuilder implements Collection<java.lang.Byte>, Recyclable<Builder> {
 
-            public Builder(GenericSegmentBuilder segment, int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            public Builder() {
             }
 
             public byte get(int index) {
+                checkRecycled();
                 return _getByteElement(index);
             }
 
             public void set(int index, byte value) {
+                checkRecycled();
                 _setByteElement(index, value);
             }
 
             public final Reader asReader() {
-                final Reader reader = Byte.Factory.RECYCLER.get().getOrCreate();
+                checkRecycled();
+                final Reader reader = Byte.Factory.READER_RECYCLER.get().getOrCreate();
                 reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
@@ -841,11 +944,13 @@ public class PrimitiveList {
 
             @Override
             public boolean isEmpty() {
+                checkRecycled();
                 return elementCount == 0;
             }
 
             @Override
             public boolean contains(Object o) {
+                checkRecycled();
                 return stream().anyMatch(o::equals);
             }
 
@@ -856,6 +961,7 @@ public class PrimitiveList {
 
             @Override
             public <T> T[] toArray(T[] a) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray(a);
             }
 
@@ -871,6 +977,7 @@ public class PrimitiveList {
 
             @Override
             public boolean containsAll(Collection<?> c) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).containsAll(c);
             }
 
@@ -895,6 +1002,7 @@ public class PrimitiveList {
             }
 
             public Stream<java.lang.Byte> stream() {
+                checkRecycled();
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE
                 ), false);
@@ -927,12 +1035,45 @@ public class PrimitiveList {
 
             @Override
             public java.util.Iterator<java.lang.Byte> iterator() {
+                checkRecycled();
                 return new Iterator(this);
             }
 
             @Override
             public String toString() {
+                checkRecycled();
                 return stream().map(String::valueOf).collect(Collectors.joining(","));
+            }
+
+            private Recycler<Builder> recycler;
+            private boolean recycled;
+
+            @Override
+            public void init(Recycler<Builder> recycler) {
+                this.recycler = recycler;
+            }
+
+            @Override
+            public void recycle() {
+                if (recycled) {
+                    throw new IllegalArgumentException("This reader is already recycled");
+                }
+                recycled = true;
+                if (recycler != null) {
+                    recycler.recycle(this);
+                }
+            }
+
+            private void checkRecycled() throws IllegalStateException {
+                if (recycled) {
+                    throw new IllegalStateException("Reader is recycled.");
+                }
+            }
+
+            @Override
+            protected void init(GenericSegmentBuilder segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                recycled = false;
             }
 
         }
@@ -945,10 +1086,16 @@ public class PrimitiveList {
             Factory() {
                 super(ElementSize.TWO_BYTES);
             }
-            private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+            private final static ThreadLocal<org.capnproto.Recycler<Reader>> READER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
                 @Override
                 protected org.capnproto.Recycler<Reader> initialValue() {
                     return new org.capnproto.Recycler<>(Reader::new);
+                }
+            };
+            private final static ThreadLocal<org.capnproto.Recycler<Builder>> BUILDER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Builder>>() {
+                @Override
+                protected org.capnproto.Recycler<Builder> initialValue() {
+                    return new org.capnproto.Recycler<>(Builder::new);
                 }
             };
 
@@ -958,7 +1105,7 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                final Reader reader = RECYCLER.get().getOrCreate();
+                final Reader reader = READER_RECYCLER.get().getOrCreate();
                 reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 return reader;
             }
@@ -968,7 +1115,9 @@ public class PrimitiveList {
                     int ptr,
                     int elementCount, int step,
                     int structDataSize, short structPointerCount) {
-                return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                Builder builder = BUILDER_RECYCLER.get().getOrCreate();
+                builder.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                return builder;
             }
 
         }
@@ -1112,30 +1261,30 @@ public class PrimitiveList {
 
             @Override
             protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
-                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 recycled = false;
             }
 
         }
 
-        public static final class Builder extends ListBuilder implements Collection<java.lang.Short> {
+        public static final class Builder extends ListBuilder implements Collection<java.lang.Short>, Recyclable<Builder> {
 
-            public Builder(GenericSegmentBuilder segment, int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            public Builder() {
             }
 
             public short get(int index) {
+                checkRecycled();
                 return _getShortElement(index);
             }
 
             public void set(int index, short value) {
+                checkRecycled();
                 _setShortElement(index, value);
             }
 
             public final Reader asReader() {
-                final Reader reader = Short.Factory.RECYCLER.get().getOrCreate();
+                checkRecycled();
+                final Reader reader = Short.Factory.READER_RECYCLER.get().getOrCreate();
                 reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
@@ -1144,21 +1293,25 @@ public class PrimitiveList {
 
             @Override
             public boolean isEmpty() {
+                checkRecycled();
                 return elementCount == 0;
             }
 
             @Override
             public boolean contains(Object o) {
+                checkRecycled();
                 return stream().anyMatch(o::equals);
             }
 
             @Override
             public Object[] toArray() {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray();
             }
 
             @Override
             public <T> T[] toArray(T[] a) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray(a);
             }
 
@@ -1199,6 +1352,7 @@ public class PrimitiveList {
 
             @Override
             public Stream<java.lang.Short> stream() {
+                checkRecycled();
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE
                 ), false);
@@ -1231,12 +1385,45 @@ public class PrimitiveList {
 
             @Override
             public java.util.Iterator<java.lang.Short> iterator() {
+                checkRecycled();
                 return new Iterator(this);
             }
 
             @Override
             public String toString() {
+                checkRecycled();
                 return stream().map(String::valueOf).collect(Collectors.joining(","));
+            }
+
+            private Recycler<Builder> recycler;
+            private boolean recycled;
+
+            @Override
+            public void init(Recycler<Builder> recycler) {
+                this.recycler = recycler;
+            }
+
+            @Override
+            public void recycle() {
+                if (recycled) {
+                    throw new IllegalArgumentException("This reader is already recycled");
+                }
+                recycled = true;
+                if (recycler != null) {
+                    recycler.recycle(this);
+                }
+            }
+
+            private void checkRecycled() throws IllegalStateException {
+                if (recycled) {
+                    throw new IllegalStateException("Reader is recycled.");
+                }
+            }
+
+            @Override
+            protected void init(GenericSegmentBuilder segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                recycled = false;
             }
 
         }
@@ -1249,10 +1436,16 @@ public class PrimitiveList {
             Factory() {
                 super(ElementSize.FOUR_BYTES);
             }
-            private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+            private final static ThreadLocal<org.capnproto.Recycler<Reader>> READER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
                 @Override
                 protected org.capnproto.Recycler<Reader> initialValue() {
                     return new org.capnproto.Recycler<>(Reader::new);
+                }
+            };
+            private final static ThreadLocal<org.capnproto.Recycler<Builder>> BUILDER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Builder>>() {
+                @Override
+                protected org.capnproto.Recycler<Builder> initialValue() {
+                    return new org.capnproto.Recycler<>(Builder::new);
                 }
             };
 
@@ -1262,7 +1455,7 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                final Reader reader = RECYCLER.get().getOrCreate();
+                final Reader reader = READER_RECYCLER.get().getOrCreate();
                 reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 return reader;
             }
@@ -1272,7 +1465,9 @@ public class PrimitiveList {
                     int ptr,
                     int elementCount, int step,
                     int structDataSize, short structPointerCount) {
-                return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                Builder builder = BUILDER_RECYCLER.get().getOrCreate();
+                builder.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                return builder;
             }
 
         }
@@ -1420,18 +1615,15 @@ public class PrimitiveList {
 
             @Override
             protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
-                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 recycled = false;
             }
 
         }
 
-        public static final class Builder extends ListBuilder implements Collection<Integer> {
+        public static final class Builder extends ListBuilder implements Collection<Integer>, Recyclable<Builder> {
 
-            public Builder(GenericSegmentBuilder segment, int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            public Builder() {
             }
 
             public int get(int index) {
@@ -1443,7 +1635,7 @@ public class PrimitiveList {
             }
 
             public final Reader asReader() {
-                final Reader reader = Int.Factory.RECYCLER.get().getOrCreate();
+                final Reader reader = Int.Factory.READER_RECYCLER.get().getOrCreate();
                 reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
@@ -1539,12 +1731,45 @@ public class PrimitiveList {
 
             @Override
             public java.util.Iterator<Integer> iterator() {
+                checkRecycled();
                 return new Iterator(this);
             }
 
             @Override
             public String toString() {
+                checkRecycled();
                 return stream().map(String::valueOf).collect(Collectors.joining(","));
+            }
+
+            private Recycler<Builder> recycler;
+            private boolean recycled;
+
+            @Override
+            public void init(Recycler<Builder> recycler) {
+                this.recycler = recycler;
+            }
+
+            @Override
+            public void recycle() {
+                if (recycled) {
+                    throw new IllegalArgumentException("This reader is already recycled");
+                }
+                recycled = true;
+                if (recycler != null) {
+                    recycler.recycle(this);
+                }
+            }
+
+            private void checkRecycled() throws IllegalStateException {
+                if (recycled) {
+                    throw new IllegalStateException("Reader is recycled.");
+                }
+            }
+
+            @Override
+            protected void init(GenericSegmentBuilder segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                recycled = false;
             }
 
         }
@@ -1557,10 +1782,16 @@ public class PrimitiveList {
             Factory() {
                 super(ElementSize.FOUR_BYTES);
             }
-            private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+            private final static ThreadLocal<org.capnproto.Recycler<Reader>> READER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
                 @Override
                 protected org.capnproto.Recycler<Reader> initialValue() {
                     return new org.capnproto.Recycler<>(Reader::new);
+                }
+            };
+            private final static ThreadLocal<org.capnproto.Recycler<Builder>> BUILDER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Builder>>() {
+                @Override
+                protected org.capnproto.Recycler<Builder> initialValue() {
+                    return new org.capnproto.Recycler<>(Builder::new);
                 }
             };
 
@@ -1570,7 +1801,7 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                final Reader reader = RECYCLER.get().getOrCreate();
+                final Reader reader = READER_RECYCLER.get().getOrCreate();
                 reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 return reader;
             }
@@ -1580,7 +1811,9 @@ public class PrimitiveList {
                     int ptr,
                     int elementCount, int step,
                     int structDataSize, short structPointerCount) {
-                return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                Builder builder = BUILDER_RECYCLER.get().getOrCreate();
+                builder.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                return builder;
             }
         }
         public static final Factory factory = new Factory();
@@ -1617,7 +1850,7 @@ public class PrimitiveList {
 
             @Override
             protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
-                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 recycled = false;
             }
 
@@ -1733,24 +1966,24 @@ public class PrimitiveList {
 
         }
 
-        public static final class Builder extends ListBuilder implements Collection<java.lang.Float> {
+        public static final class Builder extends ListBuilder implements Collection<java.lang.Float>, Recyclable<Builder> {
 
-            public Builder(GenericSegmentBuilder segment, int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            public Builder() {
             }
 
             public float get(int index) {
+                checkRecycled();
                 return _getFloatElement(index);
             }
 
             public void set(int index, float value) {
+                checkRecycled();
                 _setFloatElement(index, value);
             }
 
             public final Reader asReader() {
-                final Reader reader = Float.Factory.RECYCLER.get().getOrCreate();
+                checkRecycled();
+                final Reader reader = Float.Factory.READER_RECYCLER.get().getOrCreate();
                 reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
@@ -1759,21 +1992,25 @@ public class PrimitiveList {
 
             @Override
             public boolean isEmpty() {
+                checkRecycled();
                 return elementCount == 0;
             }
 
             @Override
             public boolean contains(Object o) {
+                checkRecycled();
                 return stream().anyMatch(o::equals);
             }
 
             @Override
             public Object[] toArray() {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray();
             }
 
             @Override
             public <T> T[] toArray(T[] a) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray(a);
             }
 
@@ -1789,6 +2026,7 @@ public class PrimitiveList {
 
             @Override
             public boolean containsAll(Collection<?> c) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).containsAll(c);
             }
 
@@ -1814,6 +2052,7 @@ public class PrimitiveList {
 
             @Override
             public Stream<java.lang.Float> stream() {
+                checkRecycled();
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE
                 ), false);
@@ -1821,7 +2060,39 @@ public class PrimitiveList {
 
             @Override
             public String toString() {
+                checkRecycled();
                 return stream().map(String::valueOf).collect(Collectors.joining(", "));
+            }
+
+            private Recycler<Builder> recycler;
+            private boolean recycled;
+
+            @Override
+            public void init(Recycler<Builder> recycler) {
+                this.recycler = recycler;
+            }
+
+            @Override
+            public void recycle() {
+                if (recycled) {
+                    throw new IllegalArgumentException("This reader is already recycled");
+                }
+                recycled = true;
+                if (recycler != null) {
+                    recycler.recycle(this);
+                }
+            }
+
+            private void checkRecycled() throws IllegalStateException {
+                if (recycled) {
+                    throw new IllegalStateException("Reader is recycled.");
+                }
+            }
+
+            @Override
+            protected void init(GenericSegmentBuilder segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                recycled = false;
             }
 
             public final class Iterator implements java.util.Iterator<java.lang.Float> {
@@ -1864,10 +2135,16 @@ public class PrimitiveList {
             Factory() {
                 super(ElementSize.EIGHT_BYTES);
             }
-            private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+            private final static ThreadLocal<org.capnproto.Recycler<Reader>> READER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
                 @Override
                 protected org.capnproto.Recycler<Reader> initialValue() {
                     return new org.capnproto.Recycler<>(Reader::new);
+                }
+            };
+            private final static ThreadLocal<org.capnproto.Recycler<Builder>> BUILDER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Builder>>() {
+                @Override
+                protected org.capnproto.Recycler<Builder> initialValue() {
+                    return new org.capnproto.Recycler<>(Builder::new);
                 }
             };
 
@@ -1877,7 +2154,7 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                final Reader reader = RECYCLER.get().getOrCreate();
+                final Reader reader = READER_RECYCLER.get().getOrCreate();
                 reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 return reader;
             }
@@ -1887,7 +2164,9 @@ public class PrimitiveList {
                     int ptr,
                     int elementCount, int step,
                     int structDataSize, short structPointerCount) {
-                return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                Builder builder = BUILDER_RECYCLER.get().getOrCreate();
+                builder.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                return builder;
             }
         }
         public static final Factory factory = new Factory();
@@ -2029,30 +2308,30 @@ public class PrimitiveList {
 
             @Override
             protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
-                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 recycled = false;
             }
 
         }
 
-        public static final class Builder extends ListBuilder implements Collection<java.lang.Long> {
+        public static final class Builder extends ListBuilder implements Collection<java.lang.Long>, Recyclable<Builder> {
 
-            public Builder(GenericSegmentBuilder segment, int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            public Builder() {
             }
 
             public long get(int index) {
+                checkRecycled();
                 return _getLongElement(index);
             }
 
             public void set(int index, long value) {
+                checkRecycled();
                 _setLongElement(index, value);
             }
 
             public final Reader asReader() {
-                final Reader reader = Long.Factory.RECYCLER.get().getOrCreate();
+                checkRecycled();
+                final Reader reader = Long.Factory.READER_RECYCLER.get().getOrCreate();
                 reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
@@ -2061,21 +2340,25 @@ public class PrimitiveList {
 
             @Override
             public boolean isEmpty() {
+                checkRecycled();
                 return elementCount == 0;
             }
 
             @Override
             public boolean contains(Object o) {
+                checkRecycled();
                 return stream().anyMatch(o::equals);
             }
 
             @Override
             public Object[] toArray() {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray();
             }
 
             @Override
             public <T> T[] toArray(T[] a) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray(a);
             }
 
@@ -2091,6 +2374,7 @@ public class PrimitiveList {
 
             @Override
             public boolean containsAll(Collection<?> c) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).containsAll(c);
             }
 
@@ -2116,6 +2400,7 @@ public class PrimitiveList {
 
             @Override
             public Stream<java.lang.Long> stream() {
+                checkRecycled();
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE), false);
             }
@@ -2147,13 +2432,47 @@ public class PrimitiveList {
 
             @Override
             public java.util.Iterator<java.lang.Long> iterator() {
+                checkRecycled();
                 return new Iterator(this);
             }
 
             @Override
             public String toString() {
+                checkRecycled();
                 return stream().map(String::valueOf).collect(Collectors.joining(","));
             }
+
+            private Recycler<Builder> recycler;
+            private boolean recycled;
+
+            @Override
+            public void init(Recycler<Builder> recycler) {
+                this.recycler = recycler;
+            }
+
+            @Override
+            public void recycle() {
+                if (recycled) {
+                    throw new IllegalArgumentException("This reader is already recycled");
+                }
+                recycled = true;
+                if (recycler != null) {
+                    recycler.recycle(this);
+                }
+            }
+
+            private void checkRecycled() throws IllegalStateException {
+                if (recycled) {
+                    throw new IllegalStateException("Reader is recycled.");
+                }
+            }
+
+            @Override
+            protected void init(GenericSegmentBuilder segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                recycled = false;
+            }
+
         }
     }
 
@@ -2164,10 +2483,16 @@ public class PrimitiveList {
             Factory() {
                 super(ElementSize.EIGHT_BYTES);
             }
-            private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+            private final static ThreadLocal<org.capnproto.Recycler<Reader>> READER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
                 @Override
                 protected org.capnproto.Recycler<Reader> initialValue() {
                     return new org.capnproto.Recycler<>(Reader::new);
+                }
+            };
+            private final static ThreadLocal<org.capnproto.Recycler<Builder>> BUILDER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Builder>>() {
+                @Override
+                protected org.capnproto.Recycler<Builder> initialValue() {
+                    return new org.capnproto.Recycler<>(Builder::new);
                 }
             };
 
@@ -2177,7 +2502,7 @@ public class PrimitiveList {
                     int elementCount, int step,
                     int structDataSize, short structPointerCount,
                     int nestingLimit) {
-                final Reader reader = RECYCLER.get().getOrCreate();
+                final Reader reader = READER_RECYCLER.get().getOrCreate();
                 reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 return reader;
             }
@@ -2187,7 +2512,9 @@ public class PrimitiveList {
                     int ptr,
                     int elementCount, int step,
                     int structDataSize, short structPointerCount) {
-                return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                Builder builder = BUILDER_RECYCLER.get().getOrCreate();
+                builder.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                return builder;
             }
         }
         public static final Factory factory = new Factory();
@@ -2224,7 +2551,7 @@ public class PrimitiveList {
 
             @Override
             protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
-                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
                 recycled = false;
             }
 
@@ -2340,24 +2667,24 @@ public class PrimitiveList {
 
         }
 
-        public static final class Builder extends ListBuilder implements Collection<java.lang.Double> {
+        public static final class Builder extends ListBuilder implements Collection<java.lang.Double>, Recyclable<Builder> {
 
-            public Builder(GenericSegmentBuilder segment, int ptr,
-                    int elementCount, int step,
-                    int structDataSize, short structPointerCount) {
-                super(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            public Builder() {
             }
 
             public double get(int index) {
+                checkRecycled();
                 return _getDoubleElement(index);
             }
 
             public void set(int index, double value) {
+                checkRecycled();
                 _setDoubleElement(index, value);
             }
 
             public final Reader asReader() {
-                final Reader reader = Double.Factory.RECYCLER.get().getOrCreate();
+                checkRecycled();
+                final Reader reader = Double.Factory.READER_RECYCLER.get().getOrCreate();
                 reader.init(this.segment, this.ptr, this.elementCount, this.step,
                         this.structDataSize, this.structPointerCount,
                         java.lang.Integer.MAX_VALUE);
@@ -2366,21 +2693,25 @@ public class PrimitiveList {
 
             @Override
             public boolean isEmpty() {
+                checkRecycled();
                 return elementCount == 0;
             }
 
             @Override
             public boolean contains(Object o) {
+                checkRecycled();
                 return stream().anyMatch(o::equals);
             }
 
             @Override
             public Object[] toArray() {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray();
             }
 
             @Override
             public <T> T[] toArray(T[] a) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).toArray(a);
             }
 
@@ -2396,6 +2727,7 @@ public class PrimitiveList {
 
             @Override
             public boolean containsAll(Collection<?> c) {
+                checkRecycled();
                 return stream().collect(Collectors.toList()).containsAll(c);
             }
 
@@ -2421,6 +2753,7 @@ public class PrimitiveList {
 
             @Override
             public Stream<java.lang.Double> stream() {
+                checkRecycled();
                 return StreamSupport.stream(Spliterators.spliterator(this.iterator(), elementCount,
                         Spliterator.SIZED & Spliterator.IMMUTABLE
                 ), false);
@@ -2429,6 +2762,37 @@ public class PrimitiveList {
             @Override
             public String toString() {
                 return stream().map(String::valueOf).collect(Collectors.joining(", "));
+            }
+
+            private Recycler<Builder> recycler;
+            private boolean recycled;
+
+            @Override
+            public void init(Recycler<Builder> recycler) {
+                this.recycler = recycler;
+            }
+
+            @Override
+            public void recycle() {
+                if (recycled) {
+                    throw new IllegalArgumentException("This reader is already recycled");
+                }
+                recycled = true;
+                if (recycler != null) {
+                    recycler.recycle(this);
+                }
+            }
+
+            private void checkRecycled() throws IllegalStateException {
+                if (recycled) {
+                    throw new IllegalStateException("Reader is recycled.");
+                }
+            }
+
+            @Override
+            protected void init(GenericSegmentBuilder segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount) {
+                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+                recycled = false;
             }
 
             public final class Iterator implements java.util.Iterator<java.lang.Double> {

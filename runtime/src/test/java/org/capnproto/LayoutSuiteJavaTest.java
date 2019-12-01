@@ -102,8 +102,8 @@ public class LayoutSuiteJavaTest {
     public void checkStruct(StructBuilder builder) {
         assertThat(0x1011121314151617L, is(builder._getLongField(0)));
         assertThat(0x20212223, is(builder._getIntField(2)));
-        assertThat((short)0x3031, is(builder._getShortField(6)));
-        assertThat((byte)0x40, is(builder._getByteField(14)));
+        assertThat((short) 0x3031, is(builder._getShortField(6)));
+        assertThat((byte) 0x40, is(builder._getByteField(14)));
         assertThat(false, is(builder._getBooleanField(120)));
         assertThat(false, is(builder._getBooleanField(121)));
         assertThat(true, is(builder._getBooleanField(122)));

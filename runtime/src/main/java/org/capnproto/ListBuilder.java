@@ -18,26 +18,38 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 package org.capnproto;
 
 public class ListBuilder {
+
     public interface Factory<T> {
+
         T constructBuilder(GenericSegmentBuilder segment, int ptr,
-                           int elementCount, int step,
-                           int structDataSize, short structPointerCount);
+                int elementCount, int step,
+                int structDataSize, short structPointerCount);
     }
 
-    final GenericSegmentBuilder segment;
-    final int ptr; // byte offset to front of list
-    final int elementCount;
-    final int step; // in bits
-    final int structDataSize; // in bits
-    final short structPointerCount;
+    GenericSegmentBuilder segment;
+    int ptr; // byte offset to front of list
+    int elementCount;
+    int step; // in bits
+    int structDataSize; // in bits
+    short structPointerCount;
 
-    public ListBuilder(GenericSegmentBuilder segment, int ptr,
-                       int elementCount, int step,
-                       int structDataSize, short structPointerCount) {
+    public ListBuilder() {
+        deinit();
+    }
+
+    final void deinit() {
+        segment = null;
+        ptr = 0;
+        elementCount = 0;
+        step = 0;
+        structDataSize = 0;
+        structPointerCount = 0;
+    }
+
+    protected void init(GenericSegmentBuilder segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount) {
         this.segment = segment;
         this.ptr = ptr;
         this.elementCount = elementCount;
@@ -51,97 +63,97 @@ public class ListBuilder {
     }
 
     protected boolean _getBooleanElement(int index) {
-        long bindex = (long)index * this.step;
-        byte b = this.segment.getBuffer().get(this.ptr + (int)(bindex / Constants.BITS_PER_BYTE));
+        long bindex = (long) index * this.step;
+        byte b = this.segment.getBuffer().get(this.ptr + (int) (bindex / Constants.BITS_PER_BYTE));
         return (b & (1 << (bindex % 8))) != 0;
     }
 
     protected byte _getByteElement(int index) {
-        return this.segment.getBuffer().get(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE));
+        return this.segment.getBuffer().get(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE));
     }
 
     protected short _getShortElement(int index) {
-        return this.segment.getBuffer().getShort(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE));
+        return this.segment.getBuffer().getShort(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE));
     }
 
     protected int _getIntElement(int index) {
-        return this.segment.getBuffer().getInt(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE));
+        return this.segment.getBuffer().getInt(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE));
     }
 
     protected long _getLongElement(int index) {
-        return this.segment.getBuffer().getLong(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE));
+        return this.segment.getBuffer().getLong(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE));
     }
 
     protected float _getFloatElement(int index) {
-        return this.segment.getBuffer().getFloat(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE));
+        return this.segment.getBuffer().getFloat(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE));
     }
 
     protected double _getDoubleElement(int index) {
-        return this.segment.getBuffer().getDouble(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE));
+        return this.segment.getBuffer().getDouble(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE));
     }
 
     protected void _setBooleanElement(int index, boolean value) {
         long bitOffset = index * this.step;
-        byte bitnum = (byte)(bitOffset % 8);
-        int position = (int)(this.ptr + (bitOffset / 8));
+        byte bitnum = (byte) (bitOffset % 8);
+        int position = (int) (this.ptr + (bitOffset / 8));
         byte oldValue = this.segment.getBuffer().get(position);
         this.segment.getBuffer().put(position,
-                                (byte)((oldValue & (~(1 << bitnum))) | (( value ? 1 : 0) << bitnum)));
+                (byte) ((oldValue & (~(1 << bitnum))) | ((value ? 1 : 0) << bitnum)));
     }
 
     protected void _setByteElement(int index, byte value) {
-        this.segment.getBuffer().put(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE), value);
+        this.segment.getBuffer().put(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE), value);
     }
 
     protected void _setShortElement(int index, short value) {
-        this.segment.getBuffer().putShort(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE), value);
+        this.segment.getBuffer().putShort(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE), value);
     }
 
     protected void _setIntElement(int index, int value) {
-        this.segment.getBuffer().putInt(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE), value);
+        this.segment.getBuffer().putInt(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE), value);
     }
 
     protected void _setLongElement(int index, long value) {
-        this.segment.getBuffer().putLong(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE), value);
+        this.segment.getBuffer().putLong(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE), value);
     }
 
     protected void _setFloatElement(int index, float value) {
-        this.segment.getBuffer().putFloat(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE), value);
+        this.segment.getBuffer().putFloat(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE), value);
     }
 
     protected void _setDoubleElement(int index, double value) {
-        this.segment.getBuffer().putDouble(this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE), value);
+        this.segment.getBuffer().putDouble(this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE), value);
     }
 
     protected final <T> T _getStructElement(StructBuilder.Factory<T> factory, int index) {
         long indexBit = (long) index * this.step;
-        int structData = this.ptr + (int)(indexBit / Constants.BITS_PER_BYTE);
+        int structData = this.ptr + (int) (indexBit / Constants.BITS_PER_BYTE);
         int structPointers = (structData + (this.structDataSize / 8)) / 8;
 
         return factory.constructBuilder(this.segment,
-                                        structData,
-                                        structPointers,
-                                        this.structDataSize,
-                                        this.structPointerCount);
+                structData,
+                structPointers,
+                this.structDataSize,
+                this.structPointerCount);
     }
 
     protected final <T> T _getPointerElement(FromPointerBuilder<T> factory, int index) {
         return factory.fromPointerBuilder(
-            this.segment,
-            (this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE)) / Constants.BYTES_PER_WORD);
+                this.segment,
+                (this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE)) / Constants.BYTES_PER_WORD);
     }
 
     protected final <T> T _initPointerElement(FromPointerBuilder<T> factory, int index, int elementCount) {
         return factory.initFromPointerBuilder(
-            this.segment,
-            (this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE)) / Constants.BYTES_PER_WORD,
-            elementCount);
+                this.segment,
+                (this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE)) / Constants.BYTES_PER_WORD,
+                elementCount);
     }
 
     protected final <Builder, Reader> void _setPointerElement(SetPointerBuilder<Builder, Reader> factory, int index, Reader value) {
         factory.setPointerBuilder(this.segment,
-                                  (this.ptr + (int)((long)index * this.step / Constants.BITS_PER_BYTE)) / Constants.BYTES_PER_WORD,
-                                  value);
+                (this.ptr + (int) ((long) index * this.step / Constants.BITS_PER_BYTE)) / Constants.BYTES_PER_WORD,
+                value);
     }
 
 }

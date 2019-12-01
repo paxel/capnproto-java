@@ -922,8 +922,8 @@ private:
             kj::strTree(
                kj::mv(unionDiscrim.builderIsDef),
               spaces(indent), "  public final ", titleCase, ".Builder get", titleCase, "() {\n",
-              spaces(indent), "    return new ", scope, titleCase,
-              ".Builder(segment, data, pointers, dataSize, pointerCount);\n",
+              spaces(indent), "    return ", scope, titleCase,
+              ".Factory.BUILDER_RECYCLER.get().getOrCreate().init(segment, data, pointers, dataSize, pointerCount);\n",
               spaces(indent), "  }\n",
               createDoIfRequired(indent,titleCase,kj::strTree(scope,titleCase,".Builder").flatten(),isExists,hasExists),
               spaces(indent), "  public final ", titleCase, ".Builder init", titleCase, "() {\n",
@@ -944,8 +944,8 @@ private:
                 }
                 KJ_UNREACHABLE;
               },
-              "  return new ", scope, titleCase,
-              ".Builder(segment, data, pointers, dataSize, pointerCount);\n",
+              "  return ", scope, titleCase,
+              ".Factory.BUILDER_RECYCLER.get().getOrCreate().init(segment, data, pointers, dataSize, pointerCount);\n",
               spaces(indent), "  }\n",
                "\n"),
          createToStringGroup(indent,titleCase,hasGet,hasExists||isExists)
@@ -1560,19 +1560,25 @@ private:
         spaces(indent), "    }\n",
               // add cache if not generic
               ((factoryTypeParams.size()==0)?kj::strTree(
-        spaces(indent), "              private final static ThreadLocal<org.capnproto.StructReaderCache<Reader>> CACHE = new ThreadLocal<org.capnproto.StructReaderCache<Reader>>() {\n",
-        spaces(indent), "                @Override\n",
-        spaces(indent), "                protected org.capnproto.StructReaderCache<Reader> initialValue() {\n",
-        spaces(indent), "                    return new org.capnproto.StructReaderCache<>(Reader::new);\n",
-        spaces(indent), "                }\n",
-        spaces(indent), "            };\n"
+        spaces(indent), "    public final static ThreadLocal<org.capnproto.StructReaderCache<Reader>> READER_RECYCLER = new ThreadLocal<org.capnproto.StructReaderCache<Reader>>() {\n",
+        spaces(indent), "       @Override\n",
+        spaces(indent), "       protected org.capnproto.StructReaderCache<Reader> initialValue() {\n",
+        spaces(indent), "          return new org.capnproto.StructReaderCache<>(Reader::new);\n",
+        spaces(indent), "       }\n",
+        spaces(indent), "    };\n\n",
+        spaces(indent), "    public final static ThreadLocal<org.capnproto.StructBuilderCache<Builder>> BUILDER_RECYCLER = new ThreadLocal<org.capnproto.StructBuilderCache<Builder>>() {\n",
+        spaces(indent), "       @Override\n",
+        spaces(indent), "       protected org.capnproto.StructBuilderCache<Builder> initialValue() {\n",
+        spaces(indent), "          return new org.capnproto.StructBuilderCache<>(Builder::new);\n",
+        spaces(indent), "       }\n",
+        spaces(indent), "    };\n\n"
               ).flatten():kj::str("")),
 
         spaces(indent),        "    public final Reader", readerTypeParams, " constructReader(org.capnproto.SegmentDataContainer segment, int data,",
         "int pointers, int dataSize, short pointerCount, int nestingLimit) {\n",
                 ((factoryTypeParams.size()==0)?
                     // use cache
-        kj::strTree(spaces(indent), "      return CACHE.get().getOrCreate().init(segment,data,pointers,dataSize,pointerCount,nestingLimit);\n").flatten():
+        kj::strTree(spaces(indent), "      return READER_RECYCLER.get().getOrCreate().init(segment,data,pointers,dataSize,pointerCount,nestingLimit);\n").flatten():
                     // always create new object
                     kj::strTree(spaces(indent), "      return new Reader",readerTypeParams, "(",
         KJ_MAP(p, typeParamVec) {
@@ -1580,13 +1586,15 @@ private:
         },
         "segment,data,pointers,dataSize,pointerCount,nestingLimit);\n").flatten()),
         spaces(indent), "    }\n",
-        spaces(indent), "    public final Builder", builderTypeParams, " constructBuilder(org.capnproto.GenericSegmentBuilder segment, int data,",
-        "int pointers, int dataSize, short pointerCount) {\n",
-        spaces(indent), "      return new Builder", builderTypeParams, "(",
-        KJ_MAP(p, typeParamVec) {
+        spaces(indent), "    public final Builder", builderTypeParams, " constructBuilder(org.capnproto.GenericSegmentBuilder segment, int data, int pointers, int dataSize, short pointerCount) {\n",
+                ((factoryTypeParams.size()==0)?
+                    // use cache
+        kj::strTree(spaces(indent), "      return BUILDER_RECYCLER.get().getOrCreate().init(segment,data,pointers,dataSize,pointerCount);\n").flatten():
+                    // always create new object
+        kj::strTree(spaces(indent), "      return new Builder", builderTypeParams, "(",        KJ_MAP(p, typeParamVec) {
           return kj::strTree(p, "_Factory, ");
         },
-        "segment, data, pointers, dataSize, pointerCount);\n",
+        "segment, data, pointers, dataSize, pointerCount);\n").flatten()),
         spaces(indent), "    }\n",
         spaces(indent), "    public final org.capnproto.StructSize structSize() {\n",
         spaces(indent), "      return ", fullName, ".STRUCT_SIZE;\n",
@@ -1622,16 +1630,33 @@ private:
                     
                     
           // constructor and init start (Builder)
-          spaces(indent+1), "  Builder(",
+                  // The initialized constructor
+          spaces(indent+1), "  public Builder(",
           KJ_MAP(p, typeParamVec) {
             return kj::strTree("org.capnproto.PointerFactory<", p, "_Builder, ?> ", p, "_Factory,");
           },
-          "org.capnproto.GenericSegmentBuilder segment, int data, int pointers,",
-          "int dataSize, short pointerCount){\n",
+          "org.capnproto.GenericSegmentBuilder segment, int data, int pointers,int dataSize, short pointerCount){\n",
           spaces(indent+1), "    super(segment, data, pointers, dataSize, pointerCount);\n",
           KJ_MAP(p, typeParamVec) {
             return kj::strTree(spaces(indent), "      this.", p, "_Factory = ", p, "_Factory;\n");
           },
+          spaces(indent+1), "  }\n",
+                  // The initialized constructor
+          spaces(indent+1), "  public Builder(", kj::strTree(          KJ_MAP(p, typeParamVec) {
+            return kj::strTree("org.capnproto.PointerFactory<", p, "_Builder, ?> ", p, "_Factory,");
+          }),// TODO: in generic, the previous line ends with a ',' I don't know how to get rid of it, so I add a dummy parameter for the time being.
+                  ((typeParamVec.size()==0)?")":
+          "int ignoreMe)"),
+                  // End TODO
+          "{\n",
+          spaces(indent+1), "    super();\n",
+          KJ_MAP(p, typeParamVec) {
+            return kj::strTree(spaces(indent), "      this.", p, "_Factory = ", p, "_Factory;\n");
+          },
+          spaces(indent+1), "  }\n",
+          spaces(indent+1), "  Builder init(org.capnproto.GenericSegmentBuilder segment, int data, int pointers,int dataSize, short pointerCount){\n",
+          spaces(indent+1), "    super._init(segment, data, pointers, dataSize, pointerCount);\n",
+          spaces(indent+1), "    return this;\n",
           spaces(indent+1), "  }\n",
           // constructor and init end
                   
@@ -1678,8 +1703,7 @@ private:
           },
           spaces(indent+1), "  }\n",
                   // The initialized constructor
-          spaces(indent+1), "  public Reader(",
-                  kj::strTree(          KJ_MAP(p, typeParamVec) {
+          spaces(indent+1), "  public Reader(", kj::strTree(          KJ_MAP(p, typeParamVec) {
             return kj::strTree("org.capnproto.PointerFactory<?,", p, "_Reader> ", p, "_Factory,");
           }),// TODO: in generic, the previous line ends with a ',' I don't know how to get rid of it, so I add a dummy parameter for the time being.
                   ((typeParamVec.size()==0)?")":
@@ -1691,7 +1715,7 @@ private:
             return kj::strTree(spaces(indent), "      this.", p, "_Factory = ", p, "_Factory;\n");
           },
           spaces(indent+1), "  }\n",
-         spaces(indent+1), "  Reader init(org.capnproto.SegmentDataContainer segment, int data, int pointers,int dataSize, short pointerCount, int nestingLimit){\n",
+          spaces(indent+1), "  Reader init(org.capnproto.SegmentDataContainer segment, int data, int pointers,int dataSize, short pointerCount, int nestingLimit){\n",
           spaces(indent+1), "    super._init(segment, data, pointers, dataSize, pointerCount, nestingLimit);\n",
           spaces(indent+1), "    return this;\n",
           spaces(indent+1), "  }\n",
