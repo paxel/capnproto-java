@@ -56,7 +56,10 @@ public final class ListList {
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount) {
-            return new Builder<>(factory, segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            Builder<ElementBuilder> builder = new Builder<>();
+            builder.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            builder.factory = this.factory;
+            return builder;
         }
     }
 
@@ -171,14 +174,9 @@ public final class ListList {
 
     public static final class Builder<T> extends ListBuilder implements Collection<T> {
 
-        private final ListFactory<T, ?> factory;
+        private ListFactory<T, ?> factory;
 
-        public Builder(ListFactory<T, ?> factory,
-                GenericSegmentBuilder segment, int ptr,
-                int elementCount, int step,
-                int structDataSize, short structPointerCount) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount);
-            this.factory = factory;
+        public Builder() {
         }
 
         public final T init(int index, int size) {

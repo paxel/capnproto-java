@@ -34,10 +34,16 @@ public final class DataList {
         Factory() {
             super(ElementSize.POINTER);
         }
-        private final static ThreadLocal<org.capnproto.Recycler<Reader>> RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
+        private final static ThreadLocal<org.capnproto.Recycler<Reader>> READER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Reader>>() {
             @Override
             protected org.capnproto.Recycler<Reader> initialValue() {
                 return new org.capnproto.Recycler<>(Reader::new);
+            }
+        };
+        private final static ThreadLocal<org.capnproto.Recycler<Builder>> BUILDER_RECYCLER = new ThreadLocal<org.capnproto.Recycler<Builder>>() {
+            @Override
+            protected org.capnproto.Recycler initialValue() {
+                return new org.capnproto.Recycler<>(Builder::new);
             }
         };
 
@@ -47,7 +53,7 @@ public final class DataList {
                 int elementCount, int step,
                 int structDataSize, short structPointerCount,
                 int nestingLimit) {
-            final Reader reader = RECYCLER.get().getOrCreate();
+            final Reader reader = READER_RECYCLER.get().getOrCreate();
             reader.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
             return reader;
         }
@@ -57,7 +63,9 @@ public final class DataList {
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount) {
-            return new Builder(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            Builder builder = BUILDER_RECYCLER.get().getOrCreate();
+            builder.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            return builder;
         }
     }
     public static final Factory factory = new Factory();
@@ -163,7 +171,7 @@ public final class DataList {
 
         @Override
         protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
-            super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
+            super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
             recycled = false;
         }
 
@@ -206,24 +214,54 @@ public final class DataList {
 
     }
 
-    public static final class Builder extends ListBuilder implements Collection<Data.Builder> {
+    public static final class Builder extends ListBuilder implements Collection<Data.Builder>, Recyclable<Builder> {
 
-        public Builder(GenericSegmentBuilder segment, int ptr,
-                int elementCount, int step,
-                int structDataSize, short structPointerCount) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+        private boolean recycled;
+        private Recycler<Builder> recycler;
+
+        public Builder() {
+        }
+
+        protected void init(GenericSegmentBuilder segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount) {
+            super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            recycled = false;
+        }
+
+        @Override
+        public void init(Recycler<Builder> recycler) {
+            this.recycler = recycler;
+        }
+
+        @Override
+        public void recycle() {
+            if (recycled) {
+                throw new IllegalArgumentException("This reader is already recycled");
+            }
+            super.deinit();
+            if (recycler != null) {
+                recycler.recycle(this);
+            }
+        }
+
+        private void checkRecycled() throws IllegalStateException {
+            if (recycled) {
+                throw new IllegalStateException("Reader is recycled.");
+            }
         }
 
         public final Data.Builder get(int index) {
+            checkRecycled();
             return _getPointerElement(Data.factory, index);
         }
 
         public final void set(int index, Data.Reader value) {
+            checkRecycled();
             _setPointerElement(Data.factory, index, value);
         }
 
         public final Reader asReader() {
-            final Reader reader = new Reader();
+            checkRecycled();
+            final Reader reader = DataList.Factory.READER_RECYCLER.get().getOrCreate();
             reader.init(this.segment, this.ptr, this.elementCount, this.step,
                     this.structDataSize, this.structPointerCount,
                     java.lang.Integer.MAX_VALUE);
@@ -257,26 +295,31 @@ public final class DataList {
 
         @Override
         public java.util.Iterator<Data.Builder> iterator() {
+            checkRecycled();
             return new Iterator(this);
         }
 
         @Override
         public boolean isEmpty() {
+            checkRecycled();
             return elementCount == 0;
         }
 
         @Override
         public boolean contains(Object o) {
+            checkRecycled();
             return stream().anyMatch(o::equals);
         }
 
         @Override
         public Object[] toArray() {
+            checkRecycled();
             return stream().collect(Collectors.toList()).toArray();
         }
 
         @Override
         public <T> T[] toArray(T[] a) {
+            checkRecycled();
             return stream().collect(Collectors.toList()).toArray(a);
         }
 
@@ -292,6 +335,7 @@ public final class DataList {
 
         @Override
         public boolean containsAll(Collection<?> c) {
+            checkRecycled();
             return stream().collect(Collectors.toList()).containsAll(c);
         }
 
@@ -317,6 +361,7 @@ public final class DataList {
 
         @Override
         public String toString() {
+            checkRecycled();
             return stream().map(String::valueOf).collect(Collectors.joining(","));
         }
 

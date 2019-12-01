@@ -63,7 +63,10 @@ public class EnumList {
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount) {
-            return new Builder<>(values, segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            Builder<T> builder = new Builder<>();
+            builder.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
+            builder.values = this.values;
+            return builder;
         }
     }
 
@@ -202,11 +205,12 @@ public class EnumList {
                 throw new IllegalStateException("Reader is recycled.");
             }
         }
-            @Override
-            protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
-                super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit); //To change body of generated methods, choose Tools | Templates.
-                recycled = false;
-            }
+
+        @Override
+        protected void init(SegmentDataContainer segment, int ptr, int elementCount, int step, int structDataSize, short structPointerCount, int nestingLimit) {
+            super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount, nestingLimit);
+            recycled = false;
+        }
 
         @Override
         public String toString() {
@@ -217,15 +221,17 @@ public class EnumList {
 
     public static final class Builder<T extends java.lang.Enum> extends ListBuilder implements Collection<T> {
 
-        public final T values[];
+        public T values[];
 
-        public Builder(T values[],
+        public Builder() {
+        }
+
+        protected void init(
                 GenericSegmentBuilder segment,
                 int ptr,
                 int elementCount, int step,
                 int structDataSize, short structPointerCount) {
-            super(segment, ptr, elementCount, step, structDataSize, structPointerCount);
-            this.values = values;
+            super.init(segment, ptr, elementCount, step, structDataSize, structPointerCount);
         }
 
         public T get(int index) {
