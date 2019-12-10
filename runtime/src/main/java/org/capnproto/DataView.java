@@ -7,6 +7,16 @@ public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyData
     static final byte[] ERAZER = new byte[1024];
 
     /**
+     * Create a copy of this DataView of the given range. The new View has the same endianness as the this View.
+     *
+     * @param offset The start of the range
+     * @param size   The size of the range.
+     *
+     * @return The new DataView.
+     */
+    public DataView copy(int offset, int size);
+
+    /**
      * Retrieves the maximum data in this view.
      *
      * @return the maximum number of bytes in this View.
@@ -21,7 +31,7 @@ public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyData
     void order(ByteOrder order);
 
     /**
-     * Creates a new DataView that has the same endianess as this DataView and starts from this DataViews current position.
+     * Creates a new DataView that has the same endianness as this DataView and starts from this DataViews current position.
      * The data is shared, the positions and limit not.
      *
      * @return a new DataView.
@@ -50,7 +60,7 @@ public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyData
     }
 
     /**
-     * Creates a new DataView that has the same endianess, reader and writer position and limit as this DataView.
+     * Creates a new DataView that has the same endianness, reader and writer position and limit as this DataView.
      * The data is shared, the positions and limit not.
      *
      * @return a new DataView.

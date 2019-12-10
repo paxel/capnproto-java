@@ -166,6 +166,30 @@ public class ByteBufferDataView implements DataView {
         }
     }
 
+    @Override
+    public DataView copy(int offset, int size) {
+        ByteBuffer newBuffer;
+        if (buffer.isDirect()) {
+            newBuffer = ByteBuffer.allocateDirect(size);
+        } else {
+            newBuffer = ByteBuffer.allocate(size);
+        }
+        // copy data
+        int position = buffer.position();
+        int limit = buffer.limit();
+        buffer.position(offset);
+        buffer.limit(offset + size);
+        newBuffer.put(buffer);
+
+        // reset the buffers
+        buffer.position(position);
+        buffer.limit(limit);
+        newBuffer.rewind();
+        final ByteBufferDataView byteBufferDataView = new ByteBufferDataView(newBuffer);
+        newBuffer.order(buffer.order());
+        return byteBufferDataView;
+    }
+
     private ByteBuffer getDstByteBuffer(DataView dst) {
         ByteBuffer tmpDst = ((ByteBufferDataView) dst).buffer;
         if (tmpDst == buffer) {
