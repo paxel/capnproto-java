@@ -14,7 +14,13 @@ public interface DataView extends RandomAccessDataView, RandomAccessReadOnlyData
      *
      * @return The new DataView.
      */
-    public DataView copy(int offset, int size);
+    DataView copy(int offset, int size);
+
+    /**
+     * Some implementations support recycling of the DataView.
+     */
+    default void recycle() {
+    }
 
     /**
      * Retrieves the maximum data in this view.
