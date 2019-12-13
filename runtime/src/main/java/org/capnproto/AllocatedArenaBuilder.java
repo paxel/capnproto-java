@@ -11,6 +11,8 @@ import java.util.function.Function;
 public class AllocatedArenaBuilder {
 
     private static final int INT_SIZE = 4;
+    // The single instance is reused to transfer segment data to the ArenaFactory.
+    private final List<DataView> transferList = new ArrayList<>();
 
     private static DataView makeDataView(int bytes) {
         DataView result = ByteBufferDataView.allocate(bytes);
@@ -39,7 +41,7 @@ public class AllocatedArenaBuilder {
 
     private SegmentCountValidator segmentCountValidator = AllocatedArenaBuilder::segmentCountValidator;
     private SegmentReader reader = this::createInternalDataViews;
-    private Function<DataView[], AllocatedArena> arenaFactory = SimpleReaderArena::new;
+    private Function<List<DataView>, AllocatedArena> arenaFactory = SimpleReaderArena::new;
 
     public SegmentCountValidator getSegmentCountValidator() {
         return segmentCountValidator;
@@ -59,11 +61,11 @@ public class AllocatedArenaBuilder {
         return this;
     }
 
-    public Function<DataView[], AllocatedArena> getArenaFactory() {
+    public Function<List<DataView>, AllocatedArena> getArenaFactory() {
         return arenaFactory;
     }
 
-    public AllocatedArenaBuilder setArenaFactory(Function<DataView[], AllocatedArena> arenaFactory) {
+    public AllocatedArenaBuilder setArenaFactory(Function<List<DataView>, AllocatedArena> arenaFactory) {
         this.arenaFactory = arenaFactory;
         return this;
     }
@@ -87,11 +89,13 @@ public class AllocatedArenaBuilder {
      * @throws IOException if reading was impossible or input data invalid.
      */
     public AllocatedArena build(ReadableByteChannel input) throws IOException {
-        final DataView[] bb = reader.read(input);
-        if (bb == null) {
+        final List<DataView> segments = reader.read(input);
+        if (segments == null) {
             return null;
         }
-        return arenaFactory.apply(bb);
+        final AllocatedArena result = arenaFactory.apply(segments);
+        segments.clear();
+        return result;
     }
 
     /**
@@ -145,7 +149,7 @@ public class AllocatedArenaBuilder {
         return frame;
     }
 
-    private DataView[] createInternalDataViews(ReadableByteChannel bc) throws IOException {
+    private List<DataView> createInternalDataViews(ReadableByteChannel bc) throws IOException {
         firstWord.rewindWriterPosition();
         int read = fillDataView(bc, firstWord);
         if (read == 0) {
@@ -179,18 +183,20 @@ public class AllocatedArenaBuilder {
         if (read < totalWords * Constants.BYTES_PER_WORD) {
             throw new IOException("Incomplete data: EOF after " + read + segmentSizeHeaderSize + Constants.BYTES_PER_WORD);
         }
-        DataView[] segmentSlices = new DataView[segmentCount];
+        transferList.clear();
         allSegments.rewindReaderPosition();
-        segmentSlices[0] = allSegments.slice();
-        segmentSlices[0].limit(segment0Size * Constants.BYTES_PER_WORD);
+        final DataView slice = allSegments.slice();
+        slice.limit(segment0Size * Constants.BYTES_PER_WORD);
+        transferList.add(slice);
         int offset = segment0Size;
         for (int ii = 1; ii < segmentCount; ++ii) {
             allSegments.readerPosition(offset * Constants.BYTES_PER_WORD);
-            segmentSlices[ii] = allSegments.slice();
-            segmentSlices[ii].limit(moreSizes.get(ii - 1) * Constants.BYTES_PER_WORD);
+            final DataView slice1 = allSegments.slice();
+            slice1.limit(moreSizes.get(ii - 1) * Constants.BYTES_PER_WORD);
+            transferList.add(slice1);
             offset += moreSizes.get(ii - 1);
         }
-        return segmentSlices;
+        return transferList;
     }
 
     /**
@@ -215,8 +221,7 @@ public class AllocatedArenaBuilder {
 
         this.segmentCountValidator.validate(segmentCount);
 
-        DataView[] segmentSlices = new DataView[segmentCount];
-
+        transferList.clear();
         int segmentSizesBase = bb.readerPosition();
         int segmentSizesSize = segmentCount * 4;
 
@@ -229,14 +234,16 @@ public class AllocatedArenaBuilder {
             int segmentSize = bb.getInt(segmentSizesBase + ii * 4);
 
             bb.readerPosition(segmentBase + totalWords * Constants.BYTES_PER_WORD);
-            segmentSlices[ii] = bb.slice();
-            segmentSlices[ii].limit(segmentSize * Constants.BYTES_PER_WORD);
+            final DataView slice = bb.slice();
+            slice.limit(segmentSize * Constants.BYTES_PER_WORD);
+            transferList.add(slice);
 
             totalWords += segmentSize;
         }
         bb.readerPosition(segmentBase + totalWords * Constants.BYTES_PER_WORD);
-
-        return arenaFactory.apply(segmentSlices);
+        final AllocatedArena result = arenaFactory.apply(transferList);
+        transferList.clear();
+        return result;
     }
 
     /**
@@ -272,6 +279,6 @@ public class AllocatedArenaBuilder {
     @FunctionalInterface
     public static interface SegmentReader {
 
-        DataView[] read(ReadableByteChannel in) throws IOException;
+        List<DataView> read(ReadableByteChannel in) throws IOException;
     }
 }

@@ -1,6 +1,7 @@
 package org.capnproto;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -11,10 +12,40 @@ public class SimpleReaderArena implements AllocatedArena {
 
     private final List<GenericSegmentReader> segments;
 
-    public SimpleReaderArena(DataView[] segmentSlices) {
+    /**
+     * Creates an Arena with a SegmentReader for each {@link DataView}.
+     *
+     * @param segments The segments.
+     */
+    public SimpleReaderArena(DataView[] segments) {
         this.segments = new ArrayList<>();
-        for (int ii = 0; ii < segmentSlices.length; ++ii) {
-            this.segments.add(new SegmentReader(segmentSlices[ii], this));
+        for (int ii = 0; ii < segments.length; ++ii) {
+            this.segments.add(new SegmentReader(segments[ii], this));
+        }
+    }
+
+    /**
+     * Creates an Arena with the given number of SegmentReader.
+     *
+     * @param segments     The segments.
+     * @param segmentCount The number of segments to use.
+     */
+    public SimpleReaderArena(DataView[] segments, int segmentCount) {
+        this.segments = new ArrayList<>();
+        for (int ii = 0; ii < segmentCount; ++ii) {
+            this.segments.add(new SegmentReader(segments[ii], this));
+        }
+    }
+
+    /**
+     * Creates an Arena with a SegmentReader for each {@link DataView}.
+     *
+     * @param segments The segments.
+     */
+    public SimpleReaderArena(Collection<DataView> segments) {
+        this.segments = new ArrayList<>();
+        for (DataView segmentSlice : segments) {
+            this.segments.add(new SegmentReader(segmentSlice, this));
         }
     }
 
