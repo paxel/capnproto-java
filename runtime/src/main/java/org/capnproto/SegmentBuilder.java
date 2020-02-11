@@ -87,6 +87,7 @@ public final class SegmentBuilder implements GenericSegmentBuilder {
 
     @Override
     public DataView getSegmentForOutput() {
+        buffer.rewindReaderPosition();
         DataView duplicate = buffer.duplicate();
         duplicate.rewindReaderPosition();
         duplicate.limit(currentSize() * Constants.BYTES_PER_WORD);
